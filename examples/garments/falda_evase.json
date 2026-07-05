@@ -1,0 +1,38 @@
+{
+  "code": "falda_evase",
+  "name": "Falda evase",
+  "version": "0.1",
+  "measurements": [
+    {"name": "waist", "label": "Cintura", "unit": "cm", "default": 73},
+    {"name": "hip", "label": "Cadera", "unit": "cm", "default": 99},
+    {"name": "skirt_length", "label": "Largo de falda", "unit": "cm", "default": 60},
+    {"name": "ease", "label": "Amplitud evase", "unit": "cm", "default": 12}
+  ],
+  "pieces": [
+    {
+      "name": "Falda evase delantera",
+      "points": {
+        "A": [0, 0],
+        "B": ["waist / 4", 0],
+        "C": ["hip / 4 + ease", "skirt_length"],
+        "D": ["-ease", "skirt_length"]
+      },
+      "lines": [
+        ["A", "B"],
+        ["B", "C"],
+        ["C", "D"],
+        ["D", "A"]
+      ],
+      "metadata": {
+        "side": "front",
+        "silhouette": "evase",
+        "industrial_status": "dsl_growth_validation"
+      }
+    }
+  ],
+  "metadata": {
+    "category": "bottom",
+    "phase": "32",
+    "industrial_status": "dsl_growth_validation"
+  }
+}

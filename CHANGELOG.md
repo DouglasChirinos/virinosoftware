@@ -1,3 +1,32 @@
+## v0.2.0
+
+MVP tecnico del motor serializable JSON.
+
+### Agregado
+
+- Contrato serializable de prendas JSON.
+- Interpretacion de formulas geometricas.
+- Registro dinamico de prendas serializables.
+- Exportacion universal SVG/DXF/PDF para prendas JSON.
+- Prenda `falda_evase` definida desde JSON.
+- Validacion geometrica de prendas serializables.
+- Validacion semantica del DSL JSON.
+- Validacion masiva del catalogo serializable.
+- Generacion masiva del catalogo serializable.
+- Exportacion masiva SVG/DXF/PDF del catalogo serializable.
+
+### Calidad
+
+- Suite esperada: `141 passed, 7 warnings`.
+- Warnings conocidos de dependencias externas `ezdxf`/`pyparsing`.
+
+### Pendientes
+
+- Editor visual del DSL.
+- Mas prendas JSON.
+- DSL industrial ampliado.
+- Empaquetado de exports.
+
 # CHANGELOG
 
 ## v0.1.0 - MVP motor patronaje 2D
