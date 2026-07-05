@@ -76,3 +76,12 @@ generate-universal-short:
 
 export-universal-short:
 	.venv/bin/python scripts/export_pattern.py --garment short_basico --waist 84 --hip 104 --outseam 45 --inseam 20 --output short_basico_universal
+
+generate-serializable-falda-evase:
+	.venv/bin/python scripts/generate_serializable_pattern.py --definition examples/garments/falda_evase.json --waist 73 --hip 99 --skirt-length 60 --ease 12
+
+generate-universal-falda-evase:
+	.venv/bin/python scripts/generate_pattern.py --garment falda_evase --waist 73 --hip 99 --skirt-length 60 --ease 12
+
+export-universal-falda-evase:
+	.venv/bin/python scripts/export_pattern.py --garment falda_evase --waist 73 --hip 99 --skirt-length 60 --ease 12 --output falda_evase_universal

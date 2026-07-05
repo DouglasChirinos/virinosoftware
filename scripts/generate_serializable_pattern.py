@@ -32,21 +32,33 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--hip", type=float, default=104)
     parser.add_argument("--outseam", type=float, default=45)
     parser.add_argument("--inseam", type=float, default=20)
+    parser.add_argument("--skirt-length", type=float, default=60)
+    parser.add_argument("--ease", type=float, default=12)
+    parser.add_argument("--hip-depth", type=float, default=None)
+    parser.add_argument("--rise", type=float, default=None)
     return parser.parse_args()
 
 
 def main() -> int:
     args = parse_args()
 
-    result = generate_serializable_pattern_from_json(
-        args.definition,
-        {
-            "waist": args.waist,
-            "hip": args.hip,
-            "outseam": args.outseam,
-            "inseam": args.inseam,
-        },
-    )
+    measurements = {
+        "waist": args.waist,
+        "hip": args.hip,
+        "outseam": args.outseam,
+        "inseam": args.inseam,
+        "skirt_length": args.skirt_length,
+        "ease": args.ease,
+        "hip_depth": args.hip_depth,
+        "rise": args.rise,
+    }
+    measurements = {
+        key: value
+        for key, value in measurements.items()
+        if value is not None
+    }
+
+    result = generate_serializable_pattern_from_json(args.definition, measurements)
 
     for line in summarize_serializable_result(result):
         print(line)
