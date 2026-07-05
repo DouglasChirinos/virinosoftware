@@ -31,8 +31,7 @@ show-exports:
 	find exports -maxdepth 3 -type f -print -exec ls -lh {} \;
 
 run-gui:
-	$(PYTHON) -m app.main
-
+	.venv/bin/python scripts/run_gui.py
 clean:
 	find . -type d -name "__pycache__" -prune -exec rm -rf {} +
 	find exports -type f \( -name "*.svg" -o -name "*.dxf" -o -name "*.pdf" \) -delete
