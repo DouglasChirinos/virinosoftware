@@ -85,3 +85,9 @@ generate-universal-falda-evase:
 
 export-universal-falda-evase:
 	.venv/bin/python scripts/export_pattern.py --garment falda_evase --waist 73 --hip 99 --skirt-length 60 --ease 12 --output falda_evase_universal
+
+validate-geometry-short:
+	.venv/bin/python scripts/validate_serializable_geometry.py --garment short_basico --measurement waist=84 --measurement hip=104 --measurement outseam=45 --measurement inseam=20 --output short_basico_geometry_validation
+
+validate-geometry-falda-evase:
+	.venv/bin/python scripts/validate_serializable_geometry.py --garment falda_evase --measurement waist=73 --measurement hip=99 --measurement skirt_length=60 --measurement ease=12 --output falda_evase_geometry_validation
