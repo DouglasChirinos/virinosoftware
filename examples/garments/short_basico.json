@@ -1,0 +1,37 @@
+{
+  "code": "short_basico",
+  "name": "Short basico",
+  "version": "0.1",
+  "measurements": [
+    {"name": "waist", "label": "Cintura", "unit": "cm", "default": 84},
+    {"name": "hip", "label": "Cadera", "unit": "cm", "default": 104},
+    {"name": "outseam", "label": "Largo exterior", "unit": "cm", "default": 45},
+    {"name": "inseam", "label": "Entrepierna", "unit": "cm", "default": 20}
+  ],
+  "pieces": [
+    {
+      "name": "Short basico delantero",
+      "points": {
+        "A": [0, 0],
+        "B": ["waist / 4", 0],
+        "C": ["hip / 4", "outseam"],
+        "D": [0, "outseam"]
+      },
+      "lines": [
+        ["A", "B"],
+        ["B", "C"],
+        ["C", "D"],
+        ["D", "A"]
+      ],
+      "metadata": {
+        "side": "front",
+        "industrial_status": "contract_only"
+      }
+    }
+  ],
+  "metadata": {
+    "category": "bottom",
+    "phase": "26",
+    "industrial_status": "dsl_contract_only"
+  }
+}
