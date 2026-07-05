@@ -62,3 +62,9 @@ generate-pattern:
 
 generate-basic-pants:
 	.venv/bin/python scripts/generate_pattern.py --garment pantalon_basico --waist 84 --hip 104 --outseam 100 --inseam 76
+
+export-pattern:
+	.venv/bin/python scripts/export_pattern.py --garment falda_basica --waist 73 --hip 99 --skirt-length 60 --output falda_basica_universal
+
+export-basic-pants:
+	.venv/bin/python scripts/export_pattern.py --garment pantalon_basico --waist 84 --hip 104 --outseam 100 --inseam 76 --output pantalon_basico_universal
