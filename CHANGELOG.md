@@ -1,8 +1,50 @@
-# Changelog
+# CHANGELOG
 
-## 0.1.0
+## v0.1.0 - MVP motor patronaje 2D
 
-- Bootstrap inicial del proyecto.
-- Estructura base.
-- Documentacion inicial.
-- Primitivas geometricas Point y Line.
+Estado: preparado para release.
+
+### Incluido
+
+- Estructura profesional del proyecto Python.
+- Motor geometrico base.
+- Compatibilidad legacy de geometria.
+- Sistema de medidas corporales en centimetros.
+- Validaciones de dominio para medidas.
+- Generador MVP de falda basica.
+- Exportacion SVG.
+- Exportacion DXF.
+- Exportacion PDF.
+- GUI minima con CustomTkinter.
+- Logging operacional con Loguru.
+- Versionado interno de patrones.
+- Reporte tecnico Markdown.
+- QA geometrico.
+- Reporte QA.
+- Margen de costura MVP.
+- Contorno cerrado de margen.
+- Interseccion de offsets.
+- Control inicial de esquinas miter/bevel.
+- Reporte tecnico de margen.
+- Flujo Git main/develop/feature documentado.
+- Checklist de release v0.1.0.
+
+### Validaciones esperadas
+
+```bash
+make test
+make run-qa
+make generate-all-exports
+make show-reports
+```
+
+### Limitaciones conocidas
+
+- Solo incluye falda basica MVP.
+- No incluye pantalon, blusa, manga ni camisa.
+- No incluye curvas industriales avanzadas.
+- No incluye fillets reales.
+- No incluye motor booleano completo.
+- No incluye escalado/tallaje.
+- No incluye API web.
+- No incluye persistencia de proyectos.
