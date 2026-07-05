@@ -129,6 +129,26 @@ def validate_basic_skirt_proportions(report: QualityReport, piece: PatternPiece)
         )
 
 
+
+def validate_seam_allowance(report: QualityReport, piece: PatternPiece) -> None:
+    seam_lines = [line for line in piece.lines if line.kind == "seam_allowance"]
+
+    if piece.metadata.get("seam_allowance") == "enabled" and not seam_lines:
+        report.add(
+            code="MISSING_SEAM_ALLOWANCE_LINES",
+            message="La pieza indica margen activo pero no tiene lineas de margen",
+            piece_name=piece.name,
+        )
+
+    for line in seam_lines:
+        if line.length <= 0:
+            report.add(
+                code="INVALID_SEAM_ALLOWANCE_LINE",
+                message=f"Linea de margen invalida: {line.label or 'sin etiqueta'}",
+                piece_name=piece.name,
+            )
+
+
 def run_pattern_quality_checks(pieces: list[PatternPiece]) -> QualityReport:
     report = QualityReport()
 
@@ -146,5 +166,6 @@ def run_pattern_quality_checks(pieces: list[PatternPiece]) -> QualityReport:
         validate_no_zero_length_lines(report, piece)
         validate_piece_closure(report, piece)
         validate_basic_skirt_proportions(report, piece)
+        validate_seam_allowance(report, piece)
 
     return report

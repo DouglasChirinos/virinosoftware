@@ -65,6 +65,8 @@ def generate_pattern_report(
                 "",
                 f"- Puntos: {len(piece.points)}",
                 f"- Lineas: {len(piece.lines)}",
+                f"- Lineas patron: {len(piece.pattern_lines)}",
+                f"- Lineas margen: {len(piece.seam_allowance_lines)}",
                 f"- Curvas: {len(piece.curves)}",
                 "",
                 "#### Puntos",

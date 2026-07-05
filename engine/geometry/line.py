@@ -8,11 +8,18 @@ from engine.geometry.point import Point
 
 @dataclass(frozen=True)
 class Line:
-    """Segmento entre dos puntos del patron."""
+    """Segmento entre dos puntos del patron.
+
+    kind:
+    - pattern: linea base del patron
+    - seam_allowance: linea de margen de costura
+    - helper: linea auxiliar
+    """
 
     start: Point
     end: Point
     label: str = ""
+    kind: str = "pattern"
 
     @property
     def length(self) -> float:

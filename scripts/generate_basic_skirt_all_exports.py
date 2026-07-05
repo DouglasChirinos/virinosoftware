@@ -13,6 +13,7 @@ from engine.exports.svg.writer import export_svg
 from engine.garments.skirt.basic_skirt import BasicSkirtDraft
 from engine.logging.config import configure_logging
 from engine.measurements.body import BodyMeasurements
+from engine.patterns.seam_allowance import SeamAllowanceConfig, apply_seam_allowance
 from engine.qa.pattern_quality import run_pattern_quality_checks
 from engine.reports.pattern_report import generate_pattern_report
 from engine.reports.quality_report import generate_quality_report
@@ -28,7 +29,10 @@ def main() -> None:
         ease=2.0,
     )
 
-    pieces = BasicSkirtDraft(measurements).draft()
+    base_pieces = BasicSkirtDraft(measurements).draft()
+    seam_pieces = [apply_seam_allowance(piece, SeamAllowanceConfig()) for piece in base_pieces]
+    pieces = base_pieces + seam_pieces
+
     qa_report = run_pattern_quality_checks(pieces)
 
     svg_path = export_svg(pieces, PROJECT_ROOT / "exports/svg/falda_basica_mvp.svg")

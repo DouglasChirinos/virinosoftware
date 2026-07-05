@@ -49,8 +49,17 @@ def export_pdf(
             y1 = page_height - margin - line.start.y * scale - 30
             x2 = margin + line.end.x * scale
             y2 = page_height - margin - line.end.y * scale - 30
+
+            if line.kind == "seam_allowance":
+                c.setDash(4, 3)
+                c.setLineWidth(0.7)
+            else:
+                c.setDash()
+                c.setLineWidth(1.0)
+
             c.line(x1, y1, x2, y2)
 
+        c.setDash()
         c.setFont("Helvetica", 7)
         for name, point in piece.points.items():
             x = margin + point.x * scale

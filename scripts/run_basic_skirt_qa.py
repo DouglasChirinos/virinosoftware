@@ -9,13 +9,16 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from engine.garments.skirt.basic_skirt import BasicSkirtDraft
 from engine.measurements.body import BodyMeasurements
+from engine.patterns.seam_allowance import apply_seam_allowance
 from engine.qa.pattern_quality import run_pattern_quality_checks
 from engine.reports.quality_report import generate_quality_report
 
 
 def main() -> None:
     measurements = BodyMeasurements(waist=72, hip=98, skirt_length=60)
-    pieces = BasicSkirtDraft(measurements).draft()
+    base_pieces = BasicSkirtDraft(measurements).draft()
+    pieces = base_pieces + [apply_seam_allowance(piece) for piece in base_pieces]
+
     result = run_pattern_quality_checks(pieces)
 
     output = generate_quality_report(

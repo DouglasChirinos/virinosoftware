@@ -22,8 +22,8 @@ class PatternPiece:
         self.points[name] = point
         return point
 
-    def add_line(self, start: Point, end: Point, label: str = "") -> Line:
-        line = Line(start=start, end=end, label=label)
+    def add_line(self, start: Point, end: Point, label: str = "", kind: str = "pattern") -> Line:
+        line = Line(start=start, end=end, label=label, kind=kind)
         self.lines.append(line)
         return line
 
@@ -33,3 +33,11 @@ class PatternPiece:
     @property
     def label(self) -> str:
         return self.name
+
+    @property
+    def pattern_lines(self) -> list[Line]:
+        return [line for line in self.lines if line.kind == "pattern"]
+
+    @property
+    def seam_allowance_lines(self) -> list[Line]:
+        return [line for line in self.lines if line.kind == "seam_allowance"]

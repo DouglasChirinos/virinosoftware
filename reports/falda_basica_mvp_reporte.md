@@ -11,7 +11,7 @@
 - Codigo: `SKIRT_BASIC`
 - Version patron: `0.1.0`
 - Version motor: `mvp-0.1.0`
-- Generado UTC: `2026-07-05T01:00:02.851681+00:00`
+- Generado UTC: `2026-07-05T01:06:17.221890+00:00`
 
 ## Medidas de entrada
 
@@ -31,6 +31,8 @@
 
 - Puntos: 9
 - Lineas: 9
+- Lineas patron: 9
+- Lineas margen: 0
 - Curvas: 0
 
 #### Puntos
@@ -64,3 +66,49 @@
 #### Anotaciones
 
 - MVP tecnico sin margenes de costura.
+
+### Falda basica delantera con margen
+
+- Puntos: 9
+- Lineas: 14
+- Lineas patron: 9
+- Lineas margen: 5
+- Curvas: 0
+
+#### Puntos
+
+| Nombre | X cm | Y cm |
+|---|---:|---:|
+| A_cintura_centro | 0.00 | 0.00 |
+| B_cintura_costado | 19.00 | 0.00 |
+| C_cadera_centro | 0.00 | 20.00 |
+| D_cadera_costado | 25.50 | 20.00 |
+| E_bajo_centro | 0.00 | 60.00 |
+| F_bajo_costado | 25.50 | 60.00 |
+| Pinza_izq | 8.42 | 0.00 |
+| Pinza_punta | 9.50 | 11.00 |
+| Pinza_der | 10.58 | 0.00 |
+
+#### Lineas
+
+| Etiqueta | Inicio | Fin | Longitud cm |
+|---|---|---|---:|
+| cintura | (0.00, 0.00) | (19.00, 0.00) | 19.00 |
+| costado cintura-cadera | (19.00, 0.00) | (25.50, 20.00) | 21.03 |
+| costado | (25.50, 20.00) | (25.50, 60.00) | 40.00 |
+| bajo | (25.50, 60.00) | (0.00, 60.00) | 25.50 |
+| centro | (0.00, 60.00) | (0.00, 20.00) | 40.00 |
+| centro superior | (0.00, 20.00) | (0.00, 0.00) | 20.00 |
+| linea de cadera | (0.00, 20.00) | (25.50, 20.00) | 25.50 |
+| pinza izquierda | (8.42, 0.00) | (9.50, 11.00) | 11.05 |
+| pinza derecha | (9.50, 11.00) | (10.58, 0.00) | 11.05 |
+| margen cintura | (0.00, -1.00) | (19.00, -1.00) | 19.00 |
+| margen costado | (27.00, 20.00) | (27.00, 60.00) | 40.00 |
+| margen bajo | (25.50, 63.00) | (0.00, 63.00) | 25.50 |
+| margen centro | (-1.50, 60.00) | (-1.50, 20.00) | 40.00 |
+| margen centro superior | (-1.50, 20.00) | (-1.50, 0.00) | 20.00 |
+
+#### Anotaciones
+
+- MVP tecnico sin margenes de costura.
+- Incluye lineas de margen de costura MVP por offset paralelo simple.

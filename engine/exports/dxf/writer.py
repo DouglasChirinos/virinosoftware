@@ -22,6 +22,15 @@ def _normalize_to_pieces(
     return list(value)  # type: ignore[arg-type]
 
 
+def _layer_for_line(piece: PatternPiece, line: Line) -> str:
+    base = piece.name[:20] or "pattern"
+    if line.kind == "seam_allowance":
+        return f"{base}_SA"[:31]
+    if line.kind == "helper":
+        return f"{base}_HELPER"[:31]
+    return f"{base}_PATTERN"[:31]
+
+
 def export_dxf(
     pieces: PatternPiece | list[PatternPiece] | tuple[PatternPiece, ...] | list[Line] | tuple[Line, ...],
     output_path: str | Path,
@@ -38,10 +47,10 @@ def export_dxf(
     msp = doc.modelspace()
 
     for piece in _normalize_to_pieces(pieces):
-        layer = piece.name[:31] or "pattern"
-        if layer not in doc.layers:
-            doc.layers.add(layer)
         for line in piece.lines:
+            layer = _layer_for_line(piece, line)
+            if layer not in doc.layers:
+                doc.layers.add(layer)
             msp.add_line(
                 (line.start.x, -line.start.y),
                 (line.end.x, -line.end.y),

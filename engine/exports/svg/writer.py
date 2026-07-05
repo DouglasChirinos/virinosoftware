@@ -52,6 +52,14 @@ def _canvas_bounds(pieces: list[PatternPiece], margin: float = 20.0) -> tuple[fl
     return min_x, min_y, max_x, max_y
 
 
+def _dash(line: Line) -> str:
+    if line.kind == "seam_allowance":
+        return ' stroke-dasharray="8 5"'
+    if line.kind == "helper":
+        return ' stroke-dasharray="3 4"'
+    return ""
+
+
 def export_svg(
     pieces: PatternPiece | list[PatternPiece] | tuple[PatternPiece, ...] | list[Line] | tuple[Line, ...],
     output_path: str | Path,
@@ -82,18 +90,23 @@ def export_svg(
     ]
 
     for piece in normalized:
-        lines.append(f'<g id="{escape(piece.name)}" stroke="black" fill="none" stroke-width="2">')
+        lines.append(f'<g id="{escape(piece.name)}">')
         for line in piece.lines:
+            dash = _dash(line)
+            stroke_width = "2" if line.kind == "pattern" else "1.5"
             lines.append(
                 f'<line x1="{tx(line.start.x):.2f}" y1="{ty(line.start.y):.2f}" '
-                f'x2="{tx(line.end.x):.2f}" y2="{ty(line.end.y):.2f}"/>'
+                f'x2="{tx(line.end.x):.2f}" y2="{ty(line.end.y):.2f}" '
+                f'stroke="black" fill="none" stroke-width="{stroke_width}"{dash}/>'
             )
+
         for name, point in piece.points.items():
             lines.append(f'<circle cx="{tx(point.x):.2f}" cy="{ty(point.y):.2f}" r="3" fill="black"/>')
             lines.append(
                 f'<text x="{tx(point.x) + 5:.2f}" y="{ty(point.y) - 5:.2f}" '
                 f'font-size="12" fill="black">{escape(name)}</text>'
             )
+
         lines.append(f'<text x="10" y="20" font-size="16" fill="black">{escape(piece.name)}</text>')
         lines.append("</g>")
 
