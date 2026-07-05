@@ -1,3 +1,28 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+PROJECT_ROOT="/home/antares/Proyecto/motor"
+cd "$PROJECT_ROOT"
+
+echo "== Fix Fase 31 #81: reconstruir exporter preservando contrato publico =="
+
+CURRENT_BRANCH="$(git branch --show-current)"
+if [[ "$CURRENT_BRANCH" != "feature/fase-31-consolidacion-contrato-exportable-serializable" ]]; then
+  echo "ERROR: rama incorrecta: $CURRENT_BRANCH"
+  echo "Esperada: feature/fase-31-consolidacion-contrato-exportable-serializable"
+  exit 1
+fi
+
+if [[ ! -x .venv/bin/python ]]; then
+  echo "ERROR: no existe .venv/bin/python. Activa/crea el entorno virtual del proyecto."
+  exit 1
+fi
+
+BACKUP="engine/generation/exporter.py.fase31.fix81.bak"
+cp engine/generation/exporter.py "$BACKUP"
+echo "Backup creado en: $BACKUP"
+
+cat > engine/generation/exporter.py <<'PY'
 """Universal export orchestration for generated patterns.
 
 This module owns the public export contract used by the CLI, GUI controller,
@@ -294,3 +319,47 @@ def export_generated_pattern(request: PatternExportRequest) -> PatternExportResu
         dxf_path=dxf_path,
         pdf_path=pdf_path,
     )
+PY
+
+echo "== Validando sintaxis =="
+.venv/bin/python -m compileall engine/generation/exporter.py
+
+echo "== Validando contratos publicos =="
+.venv/bin/python - <<'PY'
+from engine.generation import (
+    PatternExportError,
+    PatternExportRequest,
+    PatternExportResult,
+    export_generated_pattern,
+    normalize_pieces,
+)
+from engine.generation import PatternGenerationRequest
+
+request = PatternExportRequest(
+    generation_request=PatternGenerationRequest(
+        garment_code="short_basico",
+        measurements={"waist": 84, "hip": 104, "outseam": 45, "inseam": 20},
+    ),
+    output_name="contract_check",
+    export_svg=False,
+    export_dxf=False,
+    export_pdf=False,
+)
+assert request.generation_request.garment_code == "short_basico"
+print("OK: contratos publicos importables y PatternExportRequest compatible")
+PY
+
+echo "== Ejecutando pruebas focalizadas =="
+.venv/bin/pytest -q \
+  tests/test_exporter_serializable_contract.py \
+  tests/test_universal_pattern_exporter.py \
+  tests/test_gui_universal_controller.py
+
+echo "== Ejecutando validaciones completas =="
+make test
+make export-universal-short
+
+echo "== Estado Git =="
+git status --short
+
+echo "OK: Fix Fase 31 #81 aplicado y validado."
