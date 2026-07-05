@@ -56,3 +56,25 @@ git status --short
 ## Criterio de aceptacion
 
 Un usuario final puede abrir la GUI, seleccionar una prenda existente, ingresar medidas, generar el patron y exportar SVG/DXF/PDF sin editar JSON ni usar terminal.
+
+## Ajuste visual posterior a validacion manual
+
+Durante la validacion manual de la GUI se detecto que el patron se generaba, pero las exportaciones no mostraban las medidas del usuario y algunas anotaciones de puntos cercanos se solapaban.
+
+Correccion aplicada:
+
+- Los exports SVG/PDF incorporan metadatos de prenda y medidas.
+- El exportador universal adjunta `garment_code`, `garment_name`, `draft_class_name` y `measurements` a las piezas normalizadas.
+- Los labels de puntos en SVG/PDF usan posicionamiento con deteccion basica de colisiones para reducir solapes visuales.
+- Las salidas generadas siguen siendo artefactos y no se deben commitear.
+
+## Ajuste visual posterior a validacion manual
+
+Durante la validacion manual de la GUI se detecto que el patron se generaba, pero las exportaciones no mostraban las medidas del usuario y algunas anotaciones de puntos cercanos se solapaban.
+
+Correccion aplicada:
+
+- Los exports SVG/PDF incorporan metadatos de prenda y medidas.
+- El exportador universal adjunta `garment_code`, `garment_name`, `draft_class_name` y `measurements` a las piezas normalizadas.
+- Los labels de puntos en SVG/PDF usan posicionamiento con deteccion basica de colisiones para reducir solapes visuales.
+- Las salidas generadas siguen siendo artefactos y no se deben commitear.

@@ -46,6 +46,7 @@ _DEFAULT_MEASUREMENTS_BY_GARMENT: dict[str, dict[str, float]] = {
         "hip": 99.0,
         "skirt_length": 60.0,
         "ease": 2.0,
+        "hip_depth": 20.0,
     },
     "pantalon_basico": {
         "waist": 84.0,
@@ -147,6 +148,18 @@ def parse_measurements(raw_values: dict[str, str]) -> dict[str, float]:
     return parsed
 
 
+def build_generation_options(garment_code: str) -> dict[str, Any]:
+    """Return generation options for GUI product behavior."""
+
+    options: dict[str, Any] = {}
+
+    # Producto: la falda basica debe salir completa (delantera + posterior).
+    if garment_code == "falda_basica":
+        options["full_pattern"] = True
+
+    return options
+
+
 def generate_summary(
     *,
     garment_code: str,
@@ -158,6 +171,7 @@ def generate_summary(
         PatternGenerationRequest(
             garment_code=garment_code,
             measurements=measurements,
+            options=build_generation_options(garment_code),
         )
     )
 
@@ -182,6 +196,7 @@ def export_summary(
             generation_request=PatternGenerationRequest(
                 garment_code=garment_code,
                 measurements=measurements,
+                options=build_generation_options(garment_code),
             ),
             output_name=output_name or build_output_name(garment_code),
         )
