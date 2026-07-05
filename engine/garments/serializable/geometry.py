@@ -7,6 +7,8 @@ and it does not modify the GUI.
 
 from __future__ import annotations
 
+from engine.garments.serializable.formula import evaluate_formula
+
 from dataclasses import dataclass, field
 from typing import Mapping
 
@@ -167,3 +169,43 @@ def _as_float(value: Number, name: str) -> float:
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         raise SerializableGeometryGenerationError(f"variable '{name}' must be numeric")
     return float(value)
+
+def _resolve_coordinate_value(value, context):
+    """Resolve numeric coordinates or formula-string coordinates."""
+    if isinstance(value, (int, float)):
+        return float(value)
+
+    return float(evaluate_formula(value, context))
+
+# ---------------------------------------------------------------------------
+# Compatibility API for Fase 28
+# ---------------------------------------------------------------------------
+
+def generate_serializable_geometry(definition, measurements):
+    """Generate numeric geometry from a serializable garment definition."""
+    context = dict(measurements)
+    generated_pieces = []
+
+    for piece in definition.pieces:
+        resolved_points = {}
+
+        for point in piece.points:
+            x_expr, y_expr = point.coordinates
+            x_value = _resolve_coordinate_value(x_expr, context)
+            y_value = _resolve_coordinate_value(y_expr, context)
+            resolved_points[point.name] = (float(x_value), float(y_value))
+
+        resolved_lines = []
+        for line in piece.lines:
+            resolved_lines.append((line.start, line.end))
+
+        generated_pieces.append(
+            GeneratedSerializablePiece(
+                name=piece.name,
+                points=resolved_points,
+                lines=resolved_lines,
+            )
+        )
+
+    return generated_pieces
+
