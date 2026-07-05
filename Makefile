@@ -67,3 +67,7 @@ export-pattern:
 
 export-basic-pants:
 	.venv/bin/python scripts/export_pattern.py --garment pantalon_basico --waist 84 --hip 104 --outseam 100 --inseam 76 --output pantalon_basico_universal
+
+generate-serializable-short:
+	.venv/bin/python scripts/generate_serializable_pattern.py --definition examples/garments/short_basico.json
+

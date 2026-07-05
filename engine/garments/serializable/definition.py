@@ -171,3 +171,98 @@ def _require_identifier(value: str, field_name: str) -> None:
         raise SerializableGarmentValidationError(
             f"{field_name} must be an identifier-like string"
         )
+
+# ---------------------------------------------------------------------------
+# Compatibility API for Fase 28
+# ---------------------------------------------------------------------------
+
+def _serializable_measurement_from_dict(raw):
+    return SerializableMeasurementDefinition(
+        name=raw["name"],
+        label=raw.get("label", raw["name"]),
+        unit=raw.get("unit", "cm"),
+        default=raw.get("default"),
+        required=raw.get("required", True),
+    )
+
+
+def _serializable_point_from_dict(name, coordinates):
+    return SerializablePointDefinition(
+        name=name,
+        coordinates=tuple(coordinates),
+    )
+
+
+def _serializable_line_from_raw(raw):
+    if isinstance(raw, dict):
+        return SerializableLineDefinition(
+            start=raw["start"],
+            end=raw["end"],
+            kind=raw.get("kind", "line"),
+        )
+
+    if isinstance(raw, (list, tuple)) and len(raw) == 2:
+        return SerializableLineDefinition(
+            start=raw[0],
+            end=raw[1],
+        )
+
+    if isinstance(raw, (list, tuple)) and len(raw) == 3:
+        return SerializableLineDefinition(
+            start=raw[0],
+            end=raw[1],
+            kind=raw[2],
+        )
+
+    raise SerializableGarmentValidationError(
+        f"invalid line definition: {raw!r}"
+    )
+
+
+def _serializable_piece_from_dict(raw):
+    raw_points = raw.get("points", {})
+
+    if isinstance(raw_points, dict):
+        points = tuple(
+            _serializable_point_from_dict(name, coordinates)
+            for name, coordinates in raw_points.items()
+        )
+    else:
+        points = tuple(
+            SerializablePointDefinition(
+                name=item["name"],
+                coordinates=tuple(item["coordinates"]),
+            )
+            for item in raw_points
+        )
+
+    lines = tuple(_serializable_line_from_raw(item) for item in raw.get("lines", []))
+
+    return SerializablePieceDefinition(
+        name=raw["name"],
+        points=points,
+        lines=lines,
+        metadata=raw.get("metadata", {}),
+    )
+
+
+def _serializable_garment_from_dict(raw):
+    garment = SerializableGarmentDefinition(
+        code=raw["code"],
+        name=raw["name"],
+        measurements=tuple(
+            _serializable_measurement_from_dict(item)
+            for item in raw.get("measurements", [])
+        ),
+        pieces=tuple(
+            _serializable_piece_from_dict(item)
+            for item in raw.get("pieces", [])
+        ),
+        version=raw.get("version", "0.1"),
+        metadata=raw.get("metadata", {}),
+    )
+    garment.validate()
+    return garment
+
+
+SerializableGarmentDefinition.from_dict = staticmethod(_serializable_garment_from_dict)
