@@ -3,7 +3,7 @@ PIP := .venv/bin/pip
 PYTEST := .venv/bin/pytest
 RUFF := .venv/bin/ruff
 
-.PHONY: venv install test lint generate-skirt generate-all-exports run-qa show-exports show-reports run-gui clean
+.PHONY: venv install test lint generate-skirt generate-all-exports run-qa show-exports show-reports run-gui clean generate-size-skirt show-size-reports
 
 venv:
 	python3 -m venv .venv
@@ -39,3 +39,10 @@ clean:
 
 show-reports:
 	find reports -maxdepth 2 -type f -print -exec ls -lh {} \;
+
+
+generate-size-skirt:
+	$(PYTHON) scripts/generate_basic_skirt_from_size.py --size M
+
+show-size-reports:
+	find reports -maxdepth 2 -type f -name '*talla*' -o -name 'tabla_tallas_mvp.md' -print -exec ls -lh {} \;

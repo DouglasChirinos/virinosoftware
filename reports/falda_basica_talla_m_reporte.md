@@ -1,4 +1,4 @@
-# Reporte tecnico - Falda basica MVP
+# Reporte tecnico - Falda basica talla M
 
 ## Unidad de medida
 
@@ -11,7 +11,7 @@
 - Codigo: `SKIRT_BASIC`
 - Version patron: `0.1.0`
 - Version motor: `mvp-0.1.0`
-- Generado UTC: `2026-07-05T02:25:51.790018+00:00`
+- Generado UTC: `2026-07-05T02:25:52.107850+00:00`
 
 ## Medidas de entrada
 
