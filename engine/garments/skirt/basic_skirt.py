@@ -100,3 +100,72 @@ class BasicSkirtDraft:
 
     def build(self) -> PatternPiece:
         return self.draft_front()
+
+# Fase 20 garment contract metadata
+from engine.garments.base import GarmentDraft, GarmentMetadata
+from engine.garments.requirements import MeasurementRequirement
+
+
+BasicSkirtDraft.metadata = GarmentMetadata(
+    code="falda_basica",
+    name="Falda basica",
+    version="0.2.0-dev",
+    description="Falda basica MVP compatible con contrato comun de prendas.",
+)
+
+BasicSkirtDraft.required_measurements = (
+    MeasurementRequirement(
+        name="waist",
+        label="Cintura",
+        description="Contorno de cintura.",
+    ),
+    MeasurementRequirement(
+        name="hip",
+        label="Cadera",
+        description="Contorno de cadera.",
+    ),
+    MeasurementRequirement(
+        name="skirt_length",
+        label="Largo de falda",
+        description="Largo total de la falda.",
+    ),
+    MeasurementRequirement(
+        name="ease",
+        label="Holgura",
+        required=False,
+        description="Holgura aplicada al patron.",
+    ),
+    MeasurementRequirement(
+        name="hip_depth",
+        label="Altura de cadera",
+        required=False,
+        description="Distancia vertical desde cintura hasta cadera.",
+    ),
+)
+
+
+def _basic_skirt_contract_code(self):
+    return self.metadata.code
+
+
+def _basic_skirt_contract_name(self):
+    return self.metadata.name
+
+
+def _basic_skirt_validate_required_measurements(self, measurements):
+    missing = [
+        requirement.name
+        for requirement in self.required_measurements
+        if requirement.required and requirement.name not in measurements
+    ]
+    if missing:
+        joined = ", ".join(missing)
+        raise ValueError(f"Missing required measurements for {self.metadata.code}: {joined}")
+
+
+BasicSkirtDraft.code = property(_basic_skirt_contract_code)
+BasicSkirtDraft.name = property(_basic_skirt_contract_name)
+BasicSkirtDraft.validate_required_measurements = _basic_skirt_validate_required_measurements
+
+GarmentDraft.register(BasicSkirtDraft)
+
