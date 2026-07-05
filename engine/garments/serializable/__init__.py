@@ -19,6 +19,13 @@ from .geometry import (
     generate_geometry_from_definition,
 )
 from .validation import SerializableGarmentValidationError
+from .catalog_generation import (
+    CatalogGeneratedDefinitionReport,
+    CatalogGenerationReport,
+    SerializableCatalogGenerationError,
+    generate_serializable_catalog,
+    generate_serializable_catalog_files,
+)
 from .catalog_quality import (
     CatalogDefinitionReport,
     CatalogQualityReport,
@@ -67,4 +74,9 @@ __all__ = [
     "discover_garment_definition_files",
     "validate_serializable_catalog",
     "validate_serializable_catalog_files",
+    "SerializableCatalogGenerationError",
+    "CatalogGeneratedDefinitionReport",
+    "CatalogGenerationReport",
+    "generate_serializable_catalog",
+    "generate_serializable_catalog_files",
 ]
