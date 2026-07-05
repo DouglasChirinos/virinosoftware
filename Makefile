@@ -73,3 +73,6 @@ generate-serializable-short:
 
 generate-universal-short:
 	.venv/bin/python scripts/generate_pattern.py --garment short_basico --waist 84 --hip 104 --outseam 45 --inseam 20
+
+export-universal-short:
+	.venv/bin/python scripts/export_pattern.py --garment short_basico --waist 84 --hip 104 --outseam 45 --inseam 20 --output short_basico_universal
