@@ -2,14 +2,19 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from loguru import logger
+
 from engine.geometry.point import Point
 from engine.measurements.body import BodyMeasurements
 from engine.patterns.piece import PatternPiece
+from engine.patterns.versioning import PatternVersion
 
 
 @dataclass(frozen=True)
 class BasicSkirtDraft:
     """Generador MVP de falda basica.
+
+    Unidad oficial: centimetros (cm).
 
     Contrato principal:
     - draft() -> list[PatternPiece] con una pieza llamada "Falda basica delantera".
@@ -22,6 +27,15 @@ class BasicSkirtDraft:
     """
 
     measurements: BodyMeasurements
+    pattern_version: PatternVersion | None = None
+
+    def __post_init__(self) -> None:
+        if self.pattern_version is None:
+            object.__setattr__(
+                self,
+                "pattern_version",
+                PatternVersion.create(code="SKIRT_BASIC"),
+            )
 
     def _build_piece(self, name: str, x_offset: float = 0.0) -> PatternPiece:
         m = self.measurements
@@ -29,7 +43,19 @@ class BasicSkirtDraft:
         hip_quarter = m.hip / 4 + float(m.ease_hip or 0) / 2
         hip_depth = m.hip_depth
 
+        logger.info(
+            "Drafting piece name={} waist={} hip={} skirt_length={} unit={}",
+            name,
+            m.waist,
+            m.hip,
+            m.skirt_length,
+            m.unit,
+        )
+
         piece = PatternPiece(name=name)
+        piece.metadata.update(self.pattern_version.as_dict() if self.pattern_version else {})
+        piece.metadata["measurement_unit"] = m.unit
+        piece.metadata["garment"] = "basic_skirt"
 
         a = piece.add_point("A_cintura_centro", Point(x_offset + 0, 0))
         b = piece.add_point("B_cintura_costado", Point(x_offset + waist_quarter, 0))
@@ -67,16 +93,10 @@ class BasicSkirtDraft:
         return self._build_piece("Falda basica posterior", x_offset=offset)
 
     def draft(self) -> list[PatternPiece]:
-        """Contrato atomico usado por tests/exportaciones MVP nuevas."""
-
         return [self.draft_front()]
 
     def draft_full(self) -> list[PatternPiece]:
-        """Contrato completo moderno."""
-
         return [self.draft_front(), self.draft_back()]
 
     def build(self) -> PatternPiece:
-        """Compatibilidad con consumidores que esperan una sola pieza."""
-
         return self.draft_front()

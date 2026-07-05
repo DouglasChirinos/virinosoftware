@@ -16,6 +16,7 @@ class PatternPiece:
     lines: list[Line] = field(default_factory=list)
     curves: list[BezierCurve] = field(default_factory=list)
     annotations: list[str] = field(default_factory=list)
+    metadata: dict[str, str] = field(default_factory=dict)
 
     def add_point(self, name: str, point: Point) -> Point:
         self.points[name] = point

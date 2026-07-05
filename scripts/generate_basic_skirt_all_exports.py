@@ -11,10 +11,14 @@ from engine.exports.dxf.writer import export_dxf
 from engine.exports.pdf.writer import export_pdf
 from engine.exports.svg.writer import export_svg
 from engine.garments.skirt.basic_skirt import BasicSkirtDraft
+from engine.logging.config import configure_logging
 from engine.measurements.body import BodyMeasurements
+from engine.reports.pattern_report import generate_pattern_report
 
 
 def main() -> None:
+    configure_logging(PROJECT_ROOT)
+
     measurements = BodyMeasurements(
         waist=72.0,
         hip=98.0,
@@ -27,10 +31,16 @@ def main() -> None:
     svg_path = export_svg(pieces, PROJECT_ROOT / "exports/svg/falda_basica_mvp.svg")
     dxf_path = export_dxf(pieces, PROJECT_ROOT / "exports/dxf/falda_basica_mvp.dxf")
     pdf_path = export_pdf(pieces, PROJECT_ROOT / "exports/pdf/falda_basica_mvp.pdf")
+    report_path = generate_pattern_report(
+        pieces=pieces,
+        measurements=measurements,
+        output_path=PROJECT_ROOT / "reports/falda_basica_mvp_reporte.md",
+    )
 
     print(f"SVG: {svg_path}")
     print(f"DXF: {dxf_path}")
     print(f"PDF: {pdf_path}")
+    print(f"REPORT: {report_path}")
 
 
 if __name__ == "__main__":

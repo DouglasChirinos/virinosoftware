@@ -3,7 +3,7 @@ PIP := .venv/bin/pip
 PYTEST := .venv/bin/pytest
 RUFF := .venv/bin/ruff
 
-.PHONY: venv install test lint generate-skirt generate-all-exports show-exports run-gui clean
+.PHONY: venv install test lint generate-skirt generate-all-exports show-exports show-reports run-gui clean
 
 venv:
 	python3 -m venv .venv
@@ -33,3 +33,6 @@ run-gui:
 clean:
 	find . -type d -name "__pycache__" -prune -exec rm -rf {} +
 	find exports -type f \( -name "*.svg" -o -name "*.dxf" -o -name "*.pdf" \) -delete
+
+show-reports:
+	find reports -maxdepth 2 -type f -print -exec ls -lh {} \;
