@@ -97,3 +97,6 @@ validate-garments-json:
 
 validate-serializable-catalog:
 	.venv/bin/python scripts/validate_serializable_catalog.py --definitions-dir examples/garments
+
+generate-serializable-catalog:
+	.venv/bin/python scripts/generate_serializable_catalog.py --definitions-dir examples/garments
