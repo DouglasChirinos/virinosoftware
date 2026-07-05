@@ -19,6 +19,14 @@ from .geometry import (
     generate_geometry_from_definition,
 )
 from .validation import SerializableGarmentValidationError
+from .catalog_export import (
+    CatalogExportedDefinitionReport,
+    CatalogExportOptions,
+    CatalogExportReport,
+    SerializableCatalogExportError,
+    export_serializable_catalog,
+    export_serializable_catalog_files,
+)
 from .catalog_generation import (
     CatalogGeneratedDefinitionReport,
     CatalogGenerationReport,
@@ -79,4 +87,10 @@ __all__ = [
     "CatalogGenerationReport",
     "generate_serializable_catalog",
     "generate_serializable_catalog_files",
+    "SerializableCatalogExportError",
+    "CatalogExportOptions",
+    "CatalogExportedDefinitionReport",
+    "CatalogExportReport",
+    "export_serializable_catalog",
+    "export_serializable_catalog_files",
 ]
