@@ -53,3 +53,6 @@ infer-size:
 
 generate-measurement-skirt:
 	$(PYTHON) scripts/generate_basic_skirt_from_measurements.py --waist 73 --hip 99 --skirt-length 60
+
+list-garments:
+	.venv/bin/python scripts/list_garments.py
