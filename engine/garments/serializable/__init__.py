@@ -19,6 +19,14 @@ from .geometry import (
     generate_geometry_from_definition,
 )
 from .validation import SerializableGarmentValidationError
+from .semantic_validation import (
+    GarmentSemanticReport,
+    PieceSemanticReport,
+    SerializableGarmentSemanticValidationError,
+    validate_garment_definition_file,
+    validate_garment_definition_files,
+    validate_garment_definition_semantics,
+)
 
 __all__ = [
     "SerializableGarmentDefinition",
@@ -39,4 +47,10 @@ __all__ = [
     "GeneratedSerializablePattern",
     "build_formula_context",
     "generate_geometry_from_definition",
+    "SerializableGarmentSemanticValidationError",
+    "PieceSemanticReport",
+    "GarmentSemanticReport",
+    "validate_garment_definition_semantics",
+    "validate_garment_definition_file",
+    "validate_garment_definition_files",
 ]
