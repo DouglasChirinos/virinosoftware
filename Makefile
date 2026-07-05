@@ -100,3 +100,6 @@ validate-serializable-catalog:
 
 generate-serializable-catalog:
 	.venv/bin/python scripts/generate_serializable_catalog.py --definitions-dir examples/garments
+
+export-serializable-catalog:
+	.venv/bin/python scripts/export_serializable_catalog.py --definitions-dir examples/garments --output-dir exports/catalog
