@@ -103,3 +103,9 @@ generate-serializable-catalog:
 
 export-serializable-catalog:
 	.venv/bin/python scripts/export_serializable_catalog.py --definitions-dir examples/garments --output-dir exports/catalog
+
+validate-fase-40:
+	.venv/bin/python -m pytest tests/test_gui_universal_controller.py -q
+	.venv/bin/python scripts/list_garments.py
+	.venv/bin/python scripts/generate_pattern.py --garment short_basico --waist 84 --hip 104 --outseam 45 --inseam 20
+	.venv/bin/python scripts/generate_pattern.py --garment falda_evase --waist 73 --hip 99 --skirt-length 60 --ease 12
