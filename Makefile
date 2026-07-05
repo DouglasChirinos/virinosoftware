@@ -91,3 +91,6 @@ validate-geometry-short:
 
 validate-geometry-falda-evase:
 	.venv/bin/python scripts/validate_serializable_geometry.py --garment falda_evase --measurement waist=73 --measurement hip=99 --measurement skirt_length=60 --measurement ease=12 --output falda_evase_geometry_validation
+
+validate-garments-json:
+	.venv/bin/python scripts/validate_garment_definition.py --definition examples/garments/short_basico.json --definition examples/garments/falda_evase.json
