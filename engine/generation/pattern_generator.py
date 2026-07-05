@@ -1,14 +1,15 @@
 """Universal pattern generator.
 
 This module resolves a garment code through the dynamic garment registry and
-executes the draft class using normalized body measurements.
+executes the draft class using the most appropriate measurement payload.
 
-Fase 22 intentionally does not implement universal exports. Export orchestration
-belongs to a later phase after the generator contract is stable.
+Fase 23 keeps backward compatibility with ``falda_basica`` while enabling
+garments that use their own measurement mappings, such as ``pantalon_basico``.
 """
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -37,7 +38,7 @@ class PatternGenerationResult:
     garment_name: str
     draft_class_name: str
     pieces: list[Any]
-    measurements: BodyMeasurements
+    measurements: Any
     options: dict[str, Any] = field(default_factory=dict)
 
     @property
@@ -47,21 +48,35 @@ class PatternGenerationResult:
         return len(self.pieces)
 
 
-def _normalize_measurements(raw_measurements: dict[str, Any]) -> BodyMeasurements:
-    """Convert a plain mapping into ``BodyMeasurements``.
+def _validate_class_requirements(
+    draft_class: type[Any],
+    raw_measurements: Mapping[str, Any],
+) -> None:
+    """Validate class-level required measurements before instantiation."""
 
-    The current MVP measurement model is body-measurement based. This function
-    keeps Fase 22 compatible with the existing falda_basica implementation while
-    keeping a single universal entry point for future garments.
-    """
+    requirements = getattr(draft_class, "required_measurements", ())
 
-    required = ("waist", "hip", "skirt_length")
-    missing = [name for name in required if name not in raw_measurements]
+    missing = [
+        requirement.name
+        for requirement in requirements
+        if getattr(requirement, "required", True)
+        and requirement.name not in raw_measurements
+    ]
 
     if missing:
         joined = ", ".join(missing)
-        raise PatternGenerationError(f"Missing body measurements: {joined}")
+        code = getattr(getattr(draft_class, "metadata", None), "code", draft_class.__name__)
+        raise PatternGenerationError(
+            f"Missing required measurements for {code}: {joined}"
+        )
 
+
+def _can_build_body_measurements(raw_measurements: Mapping[str, Any]) -> bool:
+    required = ("waist", "hip", "skirt_length")
+    return all(key in raw_measurements for key in required)
+
+
+def _build_body_measurements(raw_measurements: Mapping[str, Any]) -> BodyMeasurements:
     allowed = {
         "waist",
         "hip",
@@ -87,13 +102,40 @@ def _normalize_measurements(raw_measurements: dict[str, Any]) -> BodyMeasurement
         ) from exc
 
 
-def _validate_garment_requirements(draft: Any, measurements: dict[str, Any]) -> None:
-    """Run the optional garment contract validation if available."""
+def _instantiate_draft(draft_class: type[Any], raw_measurements: dict[str, Any]) -> tuple[Any, Any]:
+    """Instantiate a draft class with the best compatible measurement payload."""
+
+    errors: list[str] = []
+
+    if _can_build_body_measurements(raw_measurements):
+        body_measurements = _build_body_measurements(raw_measurements)
+
+        try:
+            return draft_class(body_measurements), body_measurements
+        except Exception as exc:  # noqa: BLE001 - preserve fallback diagnostics.
+            errors.append(f"BodyMeasurements failed: {exc}")
+
+    try:
+        return draft_class(raw_measurements), raw_measurements
+    except Exception as exc:  # noqa: BLE001
+        errors.append(f"raw mapping failed: {exc}")
+
+    joined = " | ".join(errors)
+    raise PatternGenerationError(
+        f"Could not instantiate {draft_class.__name__}. {joined}"
+    )
+
+
+def _validate_instance_requirements(draft: Any, measurements: Mapping[str, Any]) -> None:
+    """Run optional instance validation if available."""
 
     validator = getattr(draft, "validate_required_measurements", None)
 
     if callable(validator):
-        validator(measurements)
+        try:
+            validator(measurements)
+        except Exception as exc:  # noqa: BLE001
+            raise PatternGenerationError(str(exc)) from exc
 
 
 def _run_draft(draft: Any) -> list[Any]:
@@ -125,17 +167,7 @@ def _run_draft(draft: Any) -> list[Any]:
 
 
 def generate_pattern(request: PatternGenerationRequest) -> PatternGenerationResult:
-    """Generate a pattern using the garment registry.
-
-    Args:
-        request: Universal generation request.
-
-    Returns:
-        Universal generation result.
-
-    Raises:
-        PatternGenerationError: If the garment or measurements are invalid.
-    """
+    """Generate a pattern using the garment registry."""
 
     garment_code = request.garment_code.strip()
 
@@ -147,16 +179,15 @@ def generate_pattern(request: PatternGenerationRequest) -> PatternGenerationResu
     except GarmentNotFoundError as exc:
         raise PatternGenerationError(f"Unknown garment code: {garment_code}") from exc
 
-    measurements = _normalize_measurements(request.measurements)
+    _validate_class_requirements(draft_class, request.measurements)
 
-    try:
-        draft = draft_class(measurements)
-    except TypeError as exc:
-        raise PatternGenerationError(
-            f"Could not instantiate {draft_class.__name__} with BodyMeasurements"
-        ) from exc
+    draft, normalized_measurements = _instantiate_draft(
+        draft_class=draft_class,
+        raw_measurements=request.measurements,
+    )
 
-    _validate_garment_requirements(draft, request.measurements)
+    _validate_instance_requirements(draft, request.measurements)
+
     pieces = _run_draft(draft)
 
     metadata = getattr(draft_class, "metadata", None)
@@ -167,6 +198,6 @@ def generate_pattern(request: PatternGenerationRequest) -> PatternGenerationResu
         garment_name=garment_name,
         draft_class_name=draft_class.__name__,
         pieces=pieces,
-        measurements=measurements,
+        measurements=normalized_measurements,
         options=dict(request.options),
     )

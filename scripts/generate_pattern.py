@@ -27,8 +27,26 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--skirt-length",
         type=float,
-        required=True,
-        help="Skirt length in cm. Required by current MVP BodyMeasurements.",
+        default=None,
+        help="Skirt length in cm. Required by falda_basica.",
+    )
+    parser.add_argument(
+        "--outseam",
+        type=float,
+        default=None,
+        help="Outer pants length in cm. Required by pantalon_basico.",
+    )
+    parser.add_argument(
+        "--inseam",
+        type=float,
+        default=None,
+        help="Optional pants inseam in cm.",
+    )
+    parser.add_argument(
+        "--rise",
+        type=float,
+        default=None,
+        help="Optional pants rise in cm.",
     )
     parser.add_argument("--ease", type=float, default=None, help="Optional ease in cm.")
     parser.add_argument(
@@ -47,8 +65,17 @@ def main() -> None:
         "waist": args.waist,
         "hip": args.hip,
         "skirt_length": args.skirt_length,
+        "outseam": args.outseam,
+        "inseam": args.inseam,
+        "rise": args.rise,
         "ease": args.ease,
         "hip_depth": args.hip_depth,
+    }
+
+    measurements = {
+        key: value
+        for key, value in measurements.items()
+        if value is not None
     }
 
     result = generate_pattern(
