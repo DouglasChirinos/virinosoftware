@@ -11,7 +11,7 @@
 - Codigo: `SKIRT_BASIC`
 - Version patron: `0.1.0`
 - Version motor: `mvp-0.1.0`
-- Generado UTC: `2026-07-05T01:23:36.055228+00:00`
+- Generado UTC: `2026-07-05T02:10:28.501947+00:00`
 
 ## Medidas de entrada
 
@@ -112,4 +112,4 @@
 #### Anotaciones
 
 - MVP tecnico sin margenes de costura.
-- Incluye contorno cerrado de margen de costura por interseccion de offsets.
+- Incluye contorno cerrado de margen con control miter/bevel.

@@ -1,3 +1,4 @@
+from engine.geometry.corners import CornerJoin, classify_corner_join
 from engine.geometry.curve import BezierCurve
 from engine.geometry.line import Line
 from engine.geometry.offset import infinite_line_intersection, is_closed_contour, parallel_offset_line, polygon_signed_area
@@ -6,6 +7,8 @@ from engine.geometry.point import Point
 from engine.geometry.polygon import Polygon
 
 __all__ = [
+    "CornerJoin",
+    "classify_corner_join",
     "Point",
     "Line",
     "BezierCurve",

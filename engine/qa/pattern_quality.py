@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections import Counter, defaultdict
-from math import isclose
+from math import isclose, isfinite
 
 from engine.geometry.line import Line
 from engine.patterns.piece import PatternPiece
@@ -182,6 +182,40 @@ def validate_closed_seam_allowance_contour(report: QualityReport, piece: Pattern
         )
 
 
+
+def validate_seam_corner_metadata(report: QualityReport, piece: PatternPiece) -> None:
+    if piece.metadata.get("seam_allowance") != "enabled":
+        return
+
+    mode = piece.metadata.get("seam_allowance_mode")
+    join = piece.metadata.get("seam_corner_join")
+    limit = piece.metadata.get("seam_miter_limit_cm")
+
+    if mode == "closed_contour" and not join:
+        report.add(
+            code="MISSING_SEAM_CORNER_JOIN",
+            message="La pieza con margen cerrado no declara seam_corner_join",
+            piece_name=piece.name,
+        )
+
+    if mode == "closed_contour" and not limit:
+        report.add(
+            code="MISSING_SEAM_MITER_LIMIT",
+            message="La pieza con margen cerrado no declara seam_miter_limit_cm",
+            piece_name=piece.name,
+        )
+
+    for line in piece.seam_allowance_lines:
+        for point in (line.start, line.end):
+            if not isfinite(point.x) or not isfinite(point.y):
+                report.add(
+                    code="NON_FINITE_SEAM_VERTEX",
+                    message="El contorno de margen tiene vertices no finitos",
+                    piece_name=piece.name,
+                )
+                return
+
+
 def run_pattern_quality_checks(pieces: list[PatternPiece]) -> QualityReport:
     report = QualityReport()
 
@@ -201,5 +235,6 @@ def run_pattern_quality_checks(pieces: list[PatternPiece]) -> QualityReport:
         validate_basic_skirt_proportions(report, piece)
         validate_seam_allowance(report, piece)
         validate_closed_seam_allowance_contour(report, piece)
+        validate_seam_corner_metadata(report, piece)
 
     return report
