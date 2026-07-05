@@ -3,7 +3,7 @@ PIP := .venv/bin/pip
 PYTEST := .venv/bin/pytest
 RUFF := .venv/bin/ruff
 
-.PHONY: venv install test lint generate-skirt generate-all-exports show-exports show-reports run-gui clean
+.PHONY: venv install test lint generate-skirt generate-all-exports run-qa show-exports show-reports run-gui clean
 
 venv:
 	python3 -m venv .venv
@@ -23,6 +23,9 @@ generate-skirt:
 
 generate-all-exports:
 	$(PYTHON) scripts/generate_basic_skirt_all_exports.py
+
+run-qa:
+	$(PYTHON) scripts/run_basic_skirt_qa.py
 
 show-exports:
 	find exports -maxdepth 3 -type f -print -exec ls -lh {} \;
