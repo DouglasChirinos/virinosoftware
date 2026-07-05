@@ -1,0 +1,78 @@
+from __future__ import annotations
+
+from engine.drafting.piece import PatternPiece
+from engine.geometry import BezierCurve, Point
+from engine.measurements.body import BodyMeasurements
+
+
+def draft_basic_skirt(measurements: BodyMeasurements) -> list[PatternPiece]:
+    """Draft a basic straight skirt block.
+
+    This MVP intentionally uses conservative formulas. It is a software baseline,
+    not a final industrial pattern standard.
+    """
+    quarter_hip = measurements.hip / 4 + measurements.ease_hip / 2
+    quarter_waist = measurements.waist / 4 + measurements.ease_waist / 2
+    length = measurements.skirt_length
+    hip_depth = measurements.hip_depth
+    waist_reduction = max(0.0, quarter_hip - quarter_waist)
+    side_inset = waist_reduction * 0.45
+    dart_width = waist_reduction * 0.55
+
+    front = PatternPiece(name="Falda basica - delantero")
+    front.add_point("A", Point(0, 0))
+    front.add_point("B", Point(quarter_hip, 0))
+    front.add_point("C", Point(quarter_hip, hip_depth))
+    front.add_point("D", Point(quarter_hip, length))
+    front.add_point("E", Point(0, length))
+    front.add_point("F", Point(0, hip_depth))
+    front.add_point("G", Point(max(0.0, quarter_hip - side_inset), 0))
+    front.add_point("H", Point(quarter_hip, hip_depth))
+
+    dart_center = quarter_hip * 0.52
+    dart_length = min(12.0, hip_depth * 0.75)
+    front.add_point("P1", Point(dart_center - dart_width / 2, 0))
+    front.add_point("P2", Point(dart_center + dart_width / 2, 0))
+    front.add_point("P3", Point(dart_center, dart_length))
+
+    for start, end in [("A", "P1"), ("P2", "G"), ("C", "D"), ("D", "E"), ("E", "A"), ("P1", "P3"), ("P2", "P3")]:
+        front.add_line(start, end)
+    front.add_curve(
+        BezierCurve(
+            start=front.points["G"],
+            control1=Point(quarter_hip, hip_depth * 0.30),
+            control2=Point(quarter_hip, hip_depth * 0.65),
+            end=front.points["C"],
+        )
+    )
+    front.annotations["formula"] = "quarter_hip=hip/4+ease_hip/2; quarter_waist=waist/4+ease_waist/2"
+
+    back = PatternPiece(name="Falda basica - posterior")
+    x0 = quarter_hip + 8.0
+    back.add_point("A", Point(x0, 0))
+    back.add_point("B", Point(x0 + quarter_hip, 0))
+    back.add_point("C", Point(x0 + quarter_hip, hip_depth))
+    back.add_point("D", Point(x0 + quarter_hip, length))
+    back.add_point("E", Point(x0, length))
+    back.add_point("G", Point(x0 + max(0.0, quarter_hip - side_inset), 0))
+
+    back_dart_center = x0 + quarter_hip * 0.48
+    back_dart_width = dart_width * 1.2
+    back_dart_length = min(14.0, hip_depth * 0.85)
+    back.add_point("P1", Point(back_dart_center - back_dart_width / 2, 0))
+    back.add_point("P2", Point(back_dart_center + back_dart_width / 2, 0))
+    back.add_point("P3", Point(back_dart_center, back_dart_length))
+
+    for start, end in [("A", "P1"), ("P2", "G"), ("C", "D"), ("D", "E"), ("E", "A"), ("P1", "P3"), ("P2", "P3")]:
+        back.add_line(start, end)
+    back.add_curve(
+        BezierCurve(
+            start=back.points["G"],
+            control1=Point(x0 + quarter_hip, hip_depth * 0.30),
+            control2=Point(x0 + quarter_hip, hip_depth * 0.65),
+            end=back.points["C"],
+        )
+    )
+    back.annotations["formula"] = front.annotations["formula"]
+
+    return [front, back]

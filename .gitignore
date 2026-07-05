@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.venv/
+venv/
+
+# Entorno
+.env
+
+# Exportaciones generadas
+exports/svg/*.svg
+exports/dxf/*.dxf
+exports/pdf/*.pdf
+
+# Sistema / IDE
+.DS_Store
+.idea/
+.vscode/

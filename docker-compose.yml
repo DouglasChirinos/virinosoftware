@@ -1,0 +1,12 @@
+services:
+  motor-patronaje:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: motor_patronaje_2d
+    working_dir: /app
+    volumes:
+      - .:/app
+    environment:
+      - PYTHONPATH=/app
+    command: python -m app.main

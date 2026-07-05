@@ -1,0 +1,34 @@
+from engine.geometry import Line, Point, line_intersection, midpoint, rectangle, rectangle_polygon
+
+
+def test_midpoint_legacy_contract() -> None:
+    assert midpoint(Point(0, 0), Point(10, 20)) == Point(5, 10)
+
+
+def test_rectangle_legacy_contract() -> None:
+    assert rectangle(Point(0, 0), width=10, height=20) == (
+        Point(0, 0),
+        Point(10, 0),
+        Point(10, 20),
+        Point(0, 20),
+    )
+
+
+def test_rectangle_polygon_contract() -> None:
+    poly = rectangle_polygon(Point(0, 0), width=10, height=20)
+    assert len(poly.points) == 4
+    assert poly.area == 200
+
+
+def test_line_intersection_legacy_contract() -> None:
+    a = Line(Point(0, 0), Point(10, 10))
+    b = Line(Point(0, 10), Point(10, 0))
+
+    assert line_intersection(a, b) == Point(5, 5)
+
+
+def test_line_intersection_parallel_returns_none() -> None:
+    a = Line(Point(0, 0), Point(10, 0))
+    b = Line(Point(0, 1), Point(10, 1))
+
+    assert line_intersection(a, b) is None

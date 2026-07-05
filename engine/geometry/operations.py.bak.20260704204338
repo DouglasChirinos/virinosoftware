@@ -1,0 +1,70 @@
+from __future__ import annotations
+
+from engine.geometry.line import Line
+from engine.geometry.point import Point
+from engine.geometry.polygon import Polygon
+
+
+def midpoint(a: Point, b: Point) -> Point:
+    """Devuelve el punto medio entre dos puntos."""
+
+    return Point((a.x + b.x) / 2, (a.y + b.y) / 2)
+
+
+def rectangle(origin: Point, width: float, height: float, label: str = "") -> Polygon:
+    """Crea un rectangulo desde un punto origen."""
+
+    if width <= 0:
+        raise ValueError("width debe ser mayor que cero")
+    if height <= 0:
+        raise ValueError("height debe ser mayor que cero")
+
+    return Polygon(
+        points=[
+            origin,
+            Point(origin.x + width, origin.y),
+            Point(origin.x + width, origin.y + height),
+            Point(origin.x, origin.y + height),
+        ],
+        label=label,
+    )
+
+
+def line_intersection(line_a: Line, line_b: Line) -> Point | None:
+    """Calcula la interseccion entre dos segmentos.
+
+    Retorna None cuando los segmentos son paralelos o no se cruzan dentro
+    del rango de ambos segmentos.
+    """
+
+    x1, y1 = line_a.start.x, line_a.start.y
+    x2, y2 = line_a.end.x, line_a.end.y
+    x3, y3 = line_b.start.x, line_b.start.y
+    x4, y4 = line_b.end.x, line_b.end.y
+
+    denominator = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4)
+
+    if abs(denominator) < 1e-9:
+        return None
+
+    px = (
+        (x1 * y2 - y1 * x2) * (x3 - x4)
+        - (x1 - x2) * (x3 * y4 - y3 * x4)
+    ) / denominator
+    py = (
+        (x1 * y2 - y1 * x2) * (y3 - y4)
+        - (y1 - y2) * (x3 * y4 - y3 * x4)
+    ) / denominator
+
+    def within(value: float, start: float, end: float) -> bool:
+        return min(start, end) - 1e-9 <= value <= max(start, end) + 1e-9
+
+    if not (
+        within(px, x1, x2)
+        and within(py, y1, y2)
+        and within(px, x3, x4)
+        and within(py, y3, y4)
+    ):
+        return None
+
+    return Point(px, py)

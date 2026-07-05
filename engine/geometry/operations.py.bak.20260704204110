@@ -1,0 +1,36 @@
+from __future__ import annotations
+
+from math import isclose
+
+from engine.geometry.primitives import Line, Point
+
+
+def midpoint(a: Point, b: Point) -> Point:
+    return Point((a.x + b.x) / 2, (a.y + b.y) / 2)
+
+
+def line_intersection(line1: Line, line2: Line) -> Point | None:
+    """Return intersection point between infinite lines or None if parallel."""
+    x1, y1 = line1.start.x, line1.start.y
+    x2, y2 = line1.end.x, line1.end.y
+    x3, y3 = line2.start.x, line2.start.y
+    x4, y4 = line2.end.x, line2.end.y
+
+    denominator = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4)
+    if isclose(denominator, 0.0, abs_tol=1e-9):
+        return None
+
+    px = ((x1 * y2 - y1 * x2) * (x3 - x4) - (x1 - x2) * (x3 * y4 - y3 * x4)) / denominator
+    py = ((x1 * y2 - y1 * x2) * (y3 - y4) - (y1 - y2) * (x3 * y4 - y3 * x4)) / denominator
+    return Point(px, py)
+
+
+def rectangle(origin: Point, width: float, height: float) -> tuple[Point, Point, Point, Point]:
+    if width <= 0 or height <= 0:
+        raise ValueError("width and height must be greater than zero")
+    return (
+        origin,
+        origin.translate(dx=width),
+        origin.translate(dx=width, dy=height),
+        origin.translate(dy=height),
+    )

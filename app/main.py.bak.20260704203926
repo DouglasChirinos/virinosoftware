@@ -1,0 +1,12 @@
+from __future__ import annotations
+
+from app.gui.main_window import PatternApp
+
+
+def main() -> None:
+    app = PatternApp()
+    app.mainloop()
+
+
+if __name__ == "__main__":
+    main()

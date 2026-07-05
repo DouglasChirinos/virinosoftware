@@ -1,0 +1,26 @@
+from __future__ import annotations
+
+from pathlib import Path
+
+import ezdxf
+
+
+def export_dxf(pattern_pieces, output_path: str | Path) -> Path:
+    output = Path(output_path)
+    output.parent.mkdir(parents=True, exist_ok=True)
+
+    doc = ezdxf.new('R2010')
+    msp = doc.modelspace()
+
+    for piece in pattern_pieces:
+        for line in piece.lines:
+            msp.add_line((line.start.x, -line.start.y), (line.end.x, -line.end.y))
+        # Etiqueta simple de pieza
+        pts = piece.points
+        if pts:
+            min_x = min(p.x for p in pts)
+            min_y = min(p.y for p in pts)
+            msp.add_text(piece.name, dxfattribs={'height': 1.2}).set_placement((min_x, -min_y + 2))
+
+    doc.saveas(output)
+    return output
