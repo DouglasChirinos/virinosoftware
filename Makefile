@@ -3,7 +3,7 @@ PIP := .venv/bin/pip
 PYTEST := .venv/bin/pytest
 RUFF := .venv/bin/ruff
 
-.PHONY: venv install test lint generate-skirt generate-all-exports run-qa show-exports show-reports run-gui clean generate-size-skirt show-size-reports infer-size generate-measurement-skirt
+.PHONY: venv install test lint generate-skirt generate-all-exports run-qa show-exports show-reports run-gui clean generate-size-skirt show-size-reports infer-size generate-measurement-skirt validate-fase-40
 
 venv:
 	python3 -m venv .venv
@@ -103,3 +103,10 @@ generate-serializable-catalog:
 
 export-serializable-catalog:
 	.venv/bin/python scripts/export_serializable_catalog.py --definitions-dir examples/garments --output-dir exports/catalog
+
+validate-fase-40:
+	.venv/bin/python -m pytest tests/test_gui_universal_controller.py tests/test_fase_40_export_visual_layout.py -q
+	.venv/bin/python scripts/list_garments.py
+	.venv/bin/python scripts/generate_pattern.py --garment short_basico --waist 84 --hip 104 --outseam 45 --inseam 20
+	.venv/bin/python scripts/generate_pattern.py --garment falda_evase --waist 73 --hip 99 --skirt-length 60 --ease 12
+	.venv/bin/python scripts/generate_pattern.py --garment falda_basica --waist 73 --hip 99 --skirt-length 60 --ease 2

@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import re
+import unicodedata
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -37,6 +40,35 @@ class GuiGenerationSummary:
     pdf_path: Path | None = None
 
 
+_DEFAULT_MEASUREMENTS_BY_GARMENT: dict[str, dict[str, float]] = {
+    "falda_basica": {
+        "waist": 73.0,
+        "hip": 99.0,
+        "skirt_length": 60.0,
+        "ease": 2.0,
+        "hip_depth": 20.0,
+    },
+    "pantalon_basico": {
+        "waist": 84.0,
+        "hip": 104.0,
+        "outseam": 100.0,
+        "inseam": 76.0,
+    },
+    "short_basico": {
+        "waist": 84.0,
+        "hip": 104.0,
+        "outseam": 45.0,
+        "inseam": 20.0,
+    },
+    "falda_evase": {
+        "waist": 73.0,
+        "hip": 99.0,
+        "skirt_length": 60.0,
+        "ease": 12.0,
+    },
+}
+
+
 def get_garment_options() -> list[GarmentOption]:
     """Return registered garments with required measurement names."""
 
@@ -57,19 +89,15 @@ def get_garment_options() -> list[GarmentOption]:
             )
         )
 
-    return options
+    return sorted(options, key=lambda item: item.code)
 
 
 def get_default_measurements(garment_code: str) -> dict[str, float]:
     """Return practical default measurements for MVP garments."""
 
-    if garment_code == "pantalon_basico":
-        return {
-            "waist": 84.0,
-            "hip": 104.0,
-            "outseam": 100.0,
-            "inseam": 76.0,
-        }
+    defaults = _DEFAULT_MEASUREMENTS_BY_GARMENT.get(garment_code)
+    if defaults is not None:
+        return dict(defaults)
 
     return {
         "waist": 73.0,
@@ -78,10 +106,27 @@ def get_default_measurements(garment_code: str) -> dict[str, float]:
     }
 
 
-def build_output_name(garment_code: str) -> str:
-    """Return default GUI output name."""
+def slugify_output_name(value: str) -> str:
+    """Return a filesystem-safe ASCII output name fragment."""
 
-    return f"{garment_code}_gui_universal"
+    normalized = unicodedata.normalize("NFKD", value.strip().lower())
+    normalized = normalized.encode("ascii", "ignore").decode("ascii")
+    normalized = re.sub(r"[^a-z0-9_-]+", "_", normalized)
+    normalized = re.sub(r"_+", "_", normalized).strip("_")
+    return normalized
+
+
+def build_output_name(garment_code: str, pattern_name: str | None = None) -> str:
+    """Return a safe GUI output name without overwriting previous exports by default."""
+
+    garment = slugify_output_name(garment_code)
+    custom = slugify_output_name(pattern_name or "")
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+    if custom:
+        return f"{garment}_{custom}_{timestamp}"
+
+    return f"{garment}_gui_{timestamp}"
 
 
 def parse_measurements(raw_values: dict[str, str]) -> dict[str, float]:
@@ -95,9 +140,24 @@ def parse_measurements(raw_values: dict[str, str]) -> dict[str, float]:
         if not value:
             continue
 
-        parsed[key] = float(value.replace(",", "."))
+        try:
+            parsed[key] = float(value.replace(",", "."))
+        except ValueError as exc:
+            raise ValueError(f"Medida invalida para {key}: {value!r}") from exc
 
     return parsed
+
+
+def build_generation_options(garment_code: str) -> dict[str, Any]:
+    """Return generation options for GUI product behavior."""
+
+    options: dict[str, Any] = {}
+
+    # Producto: la falda basica debe salir completa (delantera + posterior).
+    if garment_code == "falda_basica":
+        options["full_pattern"] = True
+
+    return options
 
 
 def generate_summary(
@@ -111,6 +171,7 @@ def generate_summary(
         PatternGenerationRequest(
             garment_code=garment_code,
             measurements=measurements,
+            options=build_generation_options(garment_code),
         )
     )
 
@@ -135,6 +196,7 @@ def export_summary(
             generation_request=PatternGenerationRequest(
                 garment_code=garment_code,
                 measurements=measurements,
+                options=build_generation_options(garment_code),
             ),
             output_name=output_name or build_output_name(garment_code),
         )

@@ -1,11 +1,23 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Iterable
+from typing import Any, Iterable
 from xml.sax.saxutils import escape
 
 from engine.geometry.line import Line
 from engine.patterns.piece import PatternPiece
+
+MEASUREMENT_LABELS = {
+    "waist": "Cintura",
+    "hip": "Cadera",
+    "skirt_length": "Largo falda",
+    "outseam": "Largo exterior",
+    "inseam": "Entrepierna",
+    "ease": "Holgura",
+    "hip_depth": "Altura cadera",
+    "ease_hip": "Holgura cadera",
+    "ease_waist": "Holgura cintura",
+}
 
 
 def _is_line_sequence(value: object) -> bool:
@@ -17,14 +29,12 @@ def _normalize_to_pieces(
 ) -> list[PatternPiece]:
     if isinstance(value, PatternPiece):
         return [value]
-
     if _is_line_sequence(value):
         return [PatternPiece(name="Lineas exportadas", lines=list(value))]
-
     return list(value)  # type: ignore[arg-type]
 
 
-def _iter_lines(pieces: list[PatternPiece]) -> Iterable[Line]:
+def _iter_lines(pieces: Iterable[PatternPiece]) -> Iterable[Any]:
     for piece in pieces:
         yield from piece.lines
 
@@ -34,16 +44,22 @@ def _canvas_bounds(pieces: list[PatternPiece], margin: float = 20.0) -> tuple[fl
     ys: list[float] = []
 
     for line in _iter_lines(pieces):
-        xs.extend([line.start.x, line.end.x])
-        ys.extend([line.start.y, line.end.y])
+        xs.extend([float(line.start.x), float(line.end.x)])
+        ys.extend([float(line.start.y), float(line.end.y)])
 
     for piece in pieces:
         for point in piece.points.values():
-            xs.append(point.x)
-            ys.append(point.y)
+            xs.append(float(point.x))
+            ys.append(float(point.y))
+        for dim in (piece.metadata or {}).get("dimension_annotations", []):
+            for key in ("start", "end"):
+                point = dim.get(key, {})
+                offset = dim.get("offset", {})
+                xs.append(float(point.get("x", 0.0)) + float(offset.get("x", 0.0)))
+                ys.append(float(point.get("y", 0.0)) + float(offset.get("y", 0.0)))
 
     if not xs or not ys:
-        return (0, 0, 200, 200)
+        return (0.0, 0.0, 200.0, 200.0)
 
     min_x = min(xs) - margin
     min_y = min(ys) - margin
@@ -52,12 +68,107 @@ def _canvas_bounds(pieces: list[PatternPiece], margin: float = 20.0) -> tuple[fl
     return min_x, min_y, max_x, max_y
 
 
-def _dash(line: Line) -> str:
+def _dash(line: Any) -> str:
     if line.kind == "seam_allowance":
         return ' stroke-dasharray="8 5"'
     if line.kind == "helper":
         return ' stroke-dasharray="3 4"'
     return ""
+
+
+def _garment_payload(pieces: list[PatternPiece]) -> tuple[str, str, dict[str, Any]]:
+    for piece in pieces:
+        metadata = getattr(piece, "metadata", {}) or {}
+        code = str(metadata.get("garment_code", "") or "")
+        name = str(metadata.get("garment_name", "") or "")
+        measurements = metadata.get("measurements") if isinstance(metadata.get("measurements"), dict) else {}
+        if code or name or measurements:
+            return code, name, measurements
+    return "", "", {}
+
+
+def _format_value(value: Any) -> str:
+    if isinstance(value, float):
+        return f"{value:.2f}".rstrip("0").rstrip(".")
+    return str(value)
+
+
+def _format_measurements(measurements: dict[str, Any]) -> str:
+    parts: list[str] = []
+    for key in ("waist", "hip", "skirt_length", "outseam", "inseam", "ease", "hip_depth"):
+        if key in measurements:
+            parts.append(f"{MEASUREMENT_LABELS.get(key, key)}: {_format_value(measurements[key])} cm")
+    return " | ".join(parts)
+
+
+def _overlaps(box: tuple[float, float, float, float], boxes: list[tuple[float, float, float, float]]) -> bool:
+    left, top, right, bottom = box
+    for other_left, other_top, other_right, other_bottom in boxes:
+        if not (right < other_left or left > other_right or bottom < other_top or top > other_bottom):
+            return True
+    return False
+
+
+def _label_position(*, x: float, y: float, text: str, font_size: float, occupied: list[tuple[float, float, float, float]]) -> tuple[float, float]:
+    width = max(35.0, len(text) * font_size * 0.58)
+    height = font_size + 4.0
+    offsets = [
+        (6, -6),
+        (6, 14),
+        (-width - 6, -6),
+        (-width - 6, 14),
+        (0, -22),
+        (0, 28),
+        (16, -22),
+        (16, 28),
+        (-width - 16, -22),
+        (-width - 16, 28),
+        (32, -6),
+        (-width - 32, -6),
+    ]
+    for dx, dy in offsets:
+        label_x = x + dx
+        label_y = y + dy
+        box = (label_x, label_y - height, label_x + width, label_y)
+        if not _overlaps(box, occupied):
+            occupied.append(box)
+            return label_x, label_y
+    label_x = x + 6
+    label_y = y + 34 + (len(occupied) % 5) * (height + 2)
+    occupied.append((label_x, label_y - height, label_x + width, label_y))
+    return label_x, label_y
+
+
+def _dimension_elements(tx: Any, ty: Any, dim: dict[str, Any]) -> list[str]:
+    start = dim.get("start", {})
+    end = dim.get("end", {})
+    offset = dim.get("offset", {})
+    label = escape(str(dim.get("label", "") or ""))
+
+    sx = float(start.get("x", 0.0))
+    sy = float(start.get("y", 0.0))
+    ex = float(end.get("x", 0.0))
+    ey = float(end.get("y", 0.0))
+    ox = float(offset.get("x", 0.0))
+    oy = float(offset.get("y", 0.0))
+
+    x1 = tx(sx)
+    y1 = ty(sy)
+    x2 = tx(ex)
+    y2 = ty(ey)
+    dx1 = tx(sx + ox)
+    dy1 = ty(sy + oy)
+    dx2 = tx(ex + ox)
+    dy2 = ty(ey + oy)
+    mid_x = (dx1 + dx2) / 2
+    mid_y = (dy1 + dy2) / 2
+
+    return [
+        f'<line x1="{x1:.2f}" y1="{y1:.2f}" x2="{dx1:.2f}" y2="{dy1:.2f}" stroke="black" stroke-width="1" stroke-dasharray="3 3"/>',
+        f'<line x1="{x2:.2f}" y1="{y2:.2f}" x2="{dx2:.2f}" y2="{dy2:.2f}" stroke="black" stroke-width="1" stroke-dasharray="3 3"/>',
+        f'<line x1="{dx1:.2f}" y1="{dy1:.2f}" x2="{dx2:.2f}" y2="{dy2:.2f}" stroke="black" stroke-width="1.2"/>',
+        f'<text x="{mid_x + 4:.2f}" y="{mid_y - 4:.2f}" font-size="11" fill="black">{label}</text>',
+    ]
 
 
 def export_svg(
@@ -71,23 +182,36 @@ def export_svg(
     min_x, min_y, max_x, max_y = _canvas_bounds(normalized)
     width = max_x - min_x
     height = max_y - min_y
-    scale = 10
+    scale = 10.0
+    header_height = 90.0
 
     def tx(x: float) -> float:
         return (x - min_x) * scale
 
     def ty(y: float) -> float:
-        return (y - min_y) * scale
+        return header_height + (y - min_y) * scale
+
+    garment_code, garment_name, measurements = _garment_payload(normalized)
+    measurement_text = _format_measurements(measurements)
+    piece_names = ", ".join(piece.name for piece in normalized)
 
     lines: list[str] = [
         '<?xml version="1.0" encoding="UTF-8"?>',
         (
             f'<svg xmlns="http://www.w3.org/2000/svg" '
-            f'width="{width * scale:.2f}" height="{height * scale:.2f}" '
-            f'viewBox="0 0 {width * scale:.2f} {height * scale:.2f}">'
+            f'width="{width * scale:.2f}" height="{height * scale + header_height:.2f}" '
+            f'viewBox="0 0 {width * scale:.2f} {height * scale + header_height:.2f}">'
         ),
         '<rect width="100%" height="100%" fill="white"/>',
+        '<text x="10" y="22" font-size="16" font-weight="bold" fill="black">Motor Patronaje 2D - Exportacion</text>',
     ]
+
+    if garment_code or garment_name:
+        lines.append(f'<text x="10" y="42" font-size="12" fill="black">Prenda: {escape((garment_code + " - " + garment_name).strip(" -"))}</text>')
+    if measurement_text:
+        lines.append(f'<text x="10" y="60" font-size="12" fill="black">Medidas: {escape(measurement_text)}</text>')
+    if piece_names:
+        lines.append(f'<text x="10" y="78" font-size="12" fill="black">Piezas: {escape(piece_names)}</text>')
 
     for piece in normalized:
         lines.append(f'<g id="{escape(piece.name)}">')
@@ -95,21 +219,32 @@ def export_svg(
             dash = _dash(line)
             stroke_width = "2" if line.kind == "pattern" else "1.5"
             lines.append(
-                f'<line x1="{tx(line.start.x):.2f}" y1="{ty(line.start.y):.2f}" '
-                f'x2="{tx(line.end.x):.2f}" y2="{ty(line.end.y):.2f}" '
+                f'<line x1="{tx(float(line.start.x)):.2f}" y1="{ty(float(line.start.y)):.2f}" '
+                f'x2="{tx(float(line.end.x)):.2f}" y2="{ty(float(line.end.y)):.2f}" '
                 f'stroke="black" fill="none" stroke-width="{stroke_width}"{dash}/>'
             )
 
-        for name, point in piece.points.items():
-            lines.append(f'<circle cx="{tx(point.x):.2f}" cy="{ty(point.y):.2f}" r="3" fill="black"/>')
+        piece_points = list(piece.points.values())
+        if piece_points:
+            piece_min_x = min(float(point.x) for point in piece_points)
+            piece_min_y = min(float(point.y) for point in piece_points)
             lines.append(
-                f'<text x="{tx(point.x) + 5:.2f}" y="{ty(point.y) - 5:.2f}" '
-                f'font-size="12" fill="black">{escape(name)}</text>'
+                f'<text x="{tx(piece_min_x):.2f}" y="{ty(piece_min_y) - 12:.2f}" font-size="12" font-weight="bold" fill="black">{escape(piece.name)}</text>'
             )
 
-        lines.append(f'<text x="10" y="20" font-size="16" fill="black">{escape(piece.name)}</text>')
-        lines.append("</g>")
+        for dim in (piece.metadata or {}).get("dimension_annotations", []):
+            lines.extend(_dimension_elements(tx, ty, dim))
 
-    lines.append("</svg>")
-    output.write_text("\n".join(lines), encoding="utf-8")
+        occupied: list[tuple[float, float, float, float]] = []
+        for name, point in sorted(piece.points.items(), key=lambda item: (float(item[1].y), float(item[1].x), item[0])):
+            x = tx(float(point.x))
+            y = ty(float(point.y))
+            lines.append(f'<circle cx="{x:.2f}" cy="{y:.2f}" r="3" fill="black"/>')
+            label_x, label_y = _label_position(x=x, y=y, text=name, font_size=11, occupied=occupied)
+            lines.append(f'<text x="{label_x:.2f}" y="{label_y:.2f}" font-size="11" fill="black">{escape(name)}</text>')
+
+        lines.append('</g>')
+
+    lines.append('</svg>')
+    output.write_text("\n".join(lines), encoding='utf-8')
     return output

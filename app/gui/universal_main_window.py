@@ -39,7 +39,7 @@ class UniversalMainWindow(ctk.CTk):
         super().__init__()
 
         self.title("VirinoSoftware - Patronaje 2D")
-        self.geometry("720x560")
+        self.geometry("820x640")
 
         ctk.set_appearance_mode("System")
         ctk.set_default_color_theme("blue")
@@ -50,6 +50,7 @@ class UniversalMainWindow(ctk.CTk):
             for item in self.garment_options
         }
         self.measurement_entries: dict[str, ctk.CTkEntry] = {}
+        self.pattern_name_var = ctk.StringVar(value="")
 
         self._build_layout()
 
@@ -60,17 +61,23 @@ class UniversalMainWindow(ctk.CTk):
 
     def _build_layout(self) -> None:
         self.grid_columnconfigure(0, weight=1)
-        self.grid_rowconfigure(4, weight=1)
+        self.grid_rowconfigure(5, weight=1)
 
         title = ctk.CTkLabel(
             self,
-            text="Motor de Patronaje 2D - GUI Universal",
-            font=ctk.CTkFont(size=20, weight="bold"),
+            text="VirinoSoftware - Patronaje 2D",
+            font=ctk.CTkFont(size=22, weight="bold"),
         )
-        title.grid(row=0, column=0, padx=20, pady=(20, 10), sticky="w")
+        title.grid(row=0, column=0, padx=20, pady=(20, 4), sticky="w")
+
+        subtitle = ctk.CTkLabel(
+            self,
+            text="Generacion y exportacion de prendas existentes sin terminal",
+        )
+        subtitle.grid(row=1, column=0, padx=20, pady=(0, 10), sticky="w")
 
         selector_frame = ctk.CTkFrame(self)
-        selector_frame.grid(row=1, column=0, padx=20, pady=10, sticky="ew")
+        selector_frame.grid(row=2, column=0, padx=20, pady=10, sticky="ew")
         selector_frame.grid_columnconfigure(1, weight=1)
 
         ctk.CTkLabel(selector_frame, text="Prenda").grid(
@@ -86,12 +93,21 @@ class UniversalMainWindow(ctk.CTk):
         )
         self.garment_menu.grid(row=0, column=1, padx=12, pady=12, sticky="ew")
 
+        ctk.CTkLabel(selector_frame, text="Nombre patron").grid(
+            row=1, column=0, padx=12, pady=12, sticky="w"
+        )
+        ctk.CTkEntry(
+            selector_frame,
+            textvariable=self.pattern_name_var,
+            placeholder_text="Opcional. Ejemplo: short_cliente_maria",
+        ).grid(row=1, column=1, padx=12, pady=12, sticky="ew")
+
         self.measurements_frame = ctk.CTkFrame(self)
-        self.measurements_frame.grid(row=2, column=0, padx=20, pady=10, sticky="ew")
+        self.measurements_frame.grid(row=3, column=0, padx=20, pady=10, sticky="ew")
         self.measurements_frame.grid_columnconfigure(1, weight=1)
 
         actions_frame = ctk.CTkFrame(self)
-        actions_frame.grid(row=3, column=0, padx=20, pady=10, sticky="ew")
+        actions_frame.grid(row=4, column=0, padx=20, pady=10, sticky="ew")
         actions_frame.grid_columnconfigure((0, 1), weight=1)
 
         ctk.CTkButton(actions_frame, text="Generar", command=self._on_generate).grid(
@@ -101,8 +117,8 @@ class UniversalMainWindow(ctk.CTk):
             row=0, column=1, padx=12, pady=12, sticky="ew"
         )
 
-        self.output_text = ctk.CTkTextbox(self, height=180)
-        self.output_text.grid(row=4, column=0, padx=20, pady=(10, 20), sticky="nsew")
+        self.output_text = ctk.CTkTextbox(self, height=220)
+        self.output_text.grid(row=5, column=0, padx=20, pady=(10, 20), sticky="nsew")
 
     def _selected_option(self):
         return self.garment_by_label.get(self.garment_var.get())
@@ -119,9 +135,6 @@ class UniversalMainWindow(ctk.CTk):
 
         defaults = get_default_measurements(option.code)
         measurement_names = list(option.required_measurements)
-
-        if option.code == "pantalon_basico" and "inseam" not in measurement_names:
-            measurement_names.append("inseam")
 
         for row, name in enumerate(measurement_names):
             ctk.CTkLabel(self.measurements_frame, text=MEASUREMENT_LABELS.get(name, name)).grid(
@@ -158,6 +171,8 @@ class UniversalMainWindow(ctk.CTk):
                     f"GARMENT_NAME: {summary.garment_name}",
                     f"DRAFT_CLASS: {summary.draft_class_name}",
                     f"PIECE_COUNT: {summary.piece_count}",
+                    "",
+                    "Use Exportar SVG/DXF/PDF para generar archivos imprimibles.",
                 ]
             )
         except Exception as exc:  # noqa: BLE001
@@ -169,10 +184,11 @@ class UniversalMainWindow(ctk.CTk):
             if option is None:
                 raise ValueError("No hay prenda seleccionada.")
 
+            output_name = build_output_name(option.code, self.pattern_name_var.get())
             summary = export_summary(
                 garment_code=option.code,
                 measurements=self._read_measurements(),
-                output_name=build_output_name(option.code),
+                output_name=output_name,
             )
 
             lines = [
@@ -181,6 +197,8 @@ class UniversalMainWindow(ctk.CTk):
                 f"GARMENT_NAME: {summary.garment_name}",
                 f"DRAFT_CLASS: {summary.draft_class_name}",
                 f"PIECE_COUNT: {summary.piece_count}",
+                f"OUTPUT_NAME: {output_name}",
+                "",
             ]
 
             for label, path in (
