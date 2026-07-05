@@ -56,3 +56,6 @@ generate-measurement-skirt:
 
 list-garments:
 	.venv/bin/python scripts/list_garments.py
+
+generate-pattern:
+	.venv/bin/python scripts/generate_pattern.py --garment falda_basica --waist 73 --hip 99 --skirt-length 60
