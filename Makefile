@@ -59,3 +59,6 @@ list-garments:
 
 generate-pattern:
 	.venv/bin/python scripts/generate_pattern.py --garment falda_basica --waist 73 --hip 99 --skirt-length 60
+
+generate-basic-pants:
+	.venv/bin/python scripts/generate_pattern.py --garment pantalon_basico --waist 84 --hip 104 --outseam 100 --inseam 76

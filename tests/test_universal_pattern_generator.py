@@ -77,7 +77,9 @@ def test_generate_pattern_rejects_missing_measurements() -> None:
             )
         )
 
-    assert "Missing body measurements" in str(exc.value)
+    assert "Missing required measurements for falda_basica" in str(exc.value)
+    assert "hip" in str(exc.value)
+    assert "skirt_length" in str(exc.value)
 
 
 def test_generate_pattern_rejects_empty_garment_code() -> None:
