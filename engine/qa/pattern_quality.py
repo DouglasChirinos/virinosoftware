@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections import Counter
+from collections import Counter, defaultdict
 from math import isclose
 
 from engine.geometry.line import Line
@@ -149,6 +149,39 @@ def validate_seam_allowance(report: QualityReport, piece: PatternPiece) -> None:
             )
 
 
+
+def validate_closed_seam_allowance_contour(report: QualityReport, piece: PatternPiece) -> None:
+    if piece.metadata.get("seam_allowance_mode") != "closed_contour":
+        return
+
+    seam_lines = [line for line in piece.lines if line.kind == "seam_allowance"]
+
+    if len(seam_lines) < 3:
+        report.add(
+            code="SEAM_CONTOUR_TOO_SMALL",
+            message="El contorno de margen cerrado requiere al menos 3 lineas",
+            piece_name=piece.name,
+        )
+        return
+
+    degree: dict[tuple[float, float], int] = defaultdict(int)
+
+    for line in seam_lines:
+        start = (round(line.start.x, 6), round(line.start.y, 6))
+        end = (round(line.end.x, 6), round(line.end.y, 6))
+        degree[start] += 1
+        degree[end] += 1
+
+    bad_vertices = [vertex for vertex, count in degree.items() if count != 2]
+
+    if bad_vertices:
+        report.add(
+            code="SEAM_CONTOUR_NOT_CLOSED",
+            message=f"Vertices de margen con grado distinto de 2: {bad_vertices}",
+            piece_name=piece.name,
+        )
+
+
 def run_pattern_quality_checks(pieces: list[PatternPiece]) -> QualityReport:
     report = QualityReport()
 
@@ -167,5 +200,6 @@ def run_pattern_quality_checks(pieces: list[PatternPiece]) -> QualityReport:
         validate_piece_closure(report, piece)
         validate_basic_skirt_proportions(report, piece)
         validate_seam_allowance(report, piece)
+        validate_closed_seam_allowance_contour(report, piece)
 
     return report

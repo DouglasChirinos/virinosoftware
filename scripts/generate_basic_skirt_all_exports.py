@@ -17,6 +17,7 @@ from engine.patterns.seam_allowance import SeamAllowanceConfig, apply_seam_allow
 from engine.qa.pattern_quality import run_pattern_quality_checks
 from engine.reports.pattern_report import generate_pattern_report
 from engine.reports.quality_report import generate_quality_report
+from engine.reports.seam_allowance_report import generate_seam_allowance_report
 
 
 def main() -> None:
@@ -51,11 +52,17 @@ def main() -> None:
         output_path=PROJECT_ROOT / "reports/falda_basica_mvp_qa.md",
     )
 
+    seam_report_path = generate_seam_allowance_report(
+        pieces=pieces,
+        output_path=PROJECT_ROOT / "reports/falda_basica_mvp_margen.md",
+    )
+
     print(f"SVG: {svg_path}")
     print(f"DXF: {dxf_path}")
     print(f"PDF: {pdf_path}")
     print(f"REPORT: {pattern_report_path}")
     print(f"QA_REPORT: {qa_report_path}")
+    print(f"SEAM_REPORT: {seam_report_path}")
     print(f"QA_STATUS: {'PASSED' if qa_report.passed else 'FAILED'}")
 
     if not qa_report.passed:

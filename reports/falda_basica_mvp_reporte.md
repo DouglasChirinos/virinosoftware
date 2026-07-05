@@ -11,7 +11,7 @@
 - Codigo: `SKIRT_BASIC`
 - Version patron: `0.1.0`
 - Version motor: `mvp-0.1.0`
-- Generado UTC: `2026-07-05T01:18:02.552615+00:00`
+- Generado UTC: `2026-07-05T01:23:36.055228+00:00`
 
 ## Medidas de entrada
 
@@ -70,9 +70,9 @@
 ### Falda basica delantera con margen
 
 - Puntos: 9
-- Lineas: 14
+- Lineas: 15
 - Lineas patron: 9
-- Lineas margen: 5
+- Lineas margen: 6
 - Curvas: 0
 
 #### Puntos
@@ -102,13 +102,14 @@
 | linea de cadera | (0.00, 20.00) | (25.50, 20.00) | 25.50 |
 | pinza izquierda | (8.42, 0.00) | (9.50, 11.00) | 11.05 |
 | pinza derecha | (9.50, 11.00) | (10.58, 0.00) | 11.05 |
-| margen cintura | (0.00, -1.00) | (19.00, -1.00) | 19.00 |
-| margen costado | (27.00, 20.00) | (27.00, 60.00) | 40.00 |
-| margen bajo | (25.50, 63.00) | (0.00, 63.00) | 25.50 |
-| margen centro | (-1.50, 60.00) | (-1.50, 20.00) | 40.00 |
-| margen centro superior | (-1.50, 20.00) | (-1.50, 0.00) | 20.00 |
+| margen cerrado 1 | (-1.50, -1.00) | (19.73, -1.00) | 21.23 |
+| margen cerrado 2 | (19.73, -1.00) | (27.00, 21.38) | 23.53 |
+| margen cerrado 3 | (27.00, 21.38) | (27.00, 63.00) | 41.62 |
+| margen cerrado 4 | (27.00, 63.00) | (-1.50, 63.00) | 28.50 |
+| margen cerrado 5 | (-1.50, 63.00) | (-1.50, 20.00) | 43.00 |
+| margen cerrado 6 | (-1.50, 20.00) | (-1.50, -1.00) | 21.00 |
 
 #### Anotaciones
 
 - MVP tecnico sin margenes de costura.
-- Incluye lineas de margen de costura MVP por offset paralelo simple.
+- Incluye contorno cerrado de margen de costura por interseccion de offsets.
