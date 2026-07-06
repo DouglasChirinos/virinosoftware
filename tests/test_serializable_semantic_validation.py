@@ -26,7 +26,7 @@ def test_short_basico_json_passes_semantic_validation() -> None:
 
     assert report.code == "short_basico"
     assert report.measurement_count == 4
-    assert report.piece_count == 1
+    assert report.piece_count == 2
     assert report.formula_count >= 1
 
 
@@ -37,8 +37,8 @@ def test_falda_evase_json_passes_semantic_validation() -> None:
 
     assert report.code == "falda_evase"
     assert report.measurement_count == 4
-    assert report.piece_count == 1
-    assert report.formula_count == 5
+    assert report.piece_count == 2
+    assert report.formula_count == 10
 
 
 def test_semantic_validation_rejects_undeclared_formula_measurement() -> None:

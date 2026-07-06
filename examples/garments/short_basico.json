@@ -1,7 +1,7 @@
 {
   "code": "short_basico",
   "name": "Short basico",
-  "version": "0.1",
+  "version": "0.2.1-mvp",
   "measurements": [
     {"name": "waist", "label": "Cintura", "unit": "cm", "default": 84},
     {"name": "hip", "label": "Cadera", "unit": "cm", "default": 104},
@@ -25,13 +25,37 @@
       ],
       "metadata": {
         "side": "front",
-        "industrial_status": "contract_only"
+        "piece_role": "delantero",
+        "industrial_status": "mvp_geometric_not_industrial",
+        "notes": "Delantero MVP geometrico. No incluye curva de tiro industrial."
+      }
+    },
+    {
+      "name": "Short basico posterior",
+      "points": {
+        "A": [0, 0],
+        "B": ["waist / 4 + 2", 0],
+        "C": ["hip / 4 + 2", "outseam"],
+        "D": [0, "outseam"]
+      },
+      "lines": [
+        ["A", "B"],
+        ["B", "C"],
+        ["C", "D"],
+        ["D", "A"]
+      ],
+      "metadata": {
+        "side": "back",
+        "piece_role": "posterior",
+        "industrial_status": "mvp_geometric_not_industrial",
+        "notes": "Posterior MVP diferenciado con mayor amplitud. No incluye curva de tiro industrial."
       }
     }
   ],
   "metadata": {
     "category": "bottom",
-    "phase": "26",
-    "industrial_status": "dsl_contract_only"
+    "phase": "40.1B",
+    "industrial_status": "mvp_geometric_not_industrial",
+    "product_warning": "Completo en piezas delantero/posterior para GUI MVP; no es patron industrial definitivo. Pendiente short industrial con tiro y curvas."
   }
 }

@@ -45,7 +45,7 @@ def test_short_basico_exports_through_universal_flow():
     assert "GARMENT_CODE: short_basico" in result.stdout
     assert "GARMENT_NAME: Short basico" in result.stdout
     assert "DRAFT_CLASS: ShortBasicoSerializableDraft" in result.stdout
-    assert "PIECE_COUNT: 1" in result.stdout
+    assert "PIECE_COUNT: 2" in result.stdout
 
     for relative_path in (
         Path("exports/svg") / f"{output_name}.svg",

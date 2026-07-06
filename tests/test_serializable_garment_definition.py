@@ -46,9 +46,9 @@ def test_load_serializable_garment_from_json_example():
     )
 
     assert definition.code == "short_basico"
-    assert definition.version == "0.1"
+    assert definition.version == "0.2.1-mvp"
     assert len(definition.measurements) == 4
-    assert len(definition.pieces) == 1
+    assert len(definition.pieces) == 2
 
 
 def test_rejects_duplicated_measurements():

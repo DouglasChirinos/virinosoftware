@@ -1,49 +1,47 @@
+from __future__ import annotations
+
 from pathlib import Path
 
-from engine.exports.svg.writer import export_svg
 from engine.generation import PatternExportRequest, PatternGenerationRequest, export_generated_pattern
-from engine.patterns.piece import PatternPiece
-from engine.geometry.point import Point
 
 
-def test_universal_export_svg_includes_garment_and_measurements(tmp_path: Path) -> None:
+def _export_svg(tmp_path: Path, garment_code: str, measurements: dict[str, float], options: dict | None = None) -> str:
     result = export_generated_pattern(
         PatternExportRequest(
             generation_request=PatternGenerationRequest(
-                garment_code="falda_basica",
-                measurements={"waist": 72, "hip": 98, "skirt_length": 60},
+                garment_code=garment_code,
+                measurements=measurements,
+                options=options or {},
             ),
-            output_name="falda_visual_metadata",
+            output_name=f"{garment_code}_visual_metadata",
             output_dir=tmp_path,
             export_dxf=False,
             export_pdf=False,
         )
     )
-
     assert result.svg_path is not None
-    svg_text = result.svg_path.read_text(encoding="utf-8")
-
-    assert "Prenda: falda_basica" in svg_text
-    assert "Medidas:" in svg_text
-    assert "waist: 72 cm" in svg_text
-    assert "hip: 98 cm" in svg_text
-    assert "skirt_length: 60 cm" in svg_text
+    return result.svg_path.read_text(encoding="utf-8")
 
 
-def test_svg_label_positions_are_not_identical_for_close_points(tmp_path: Path) -> None:
-    piece = PatternPiece(
-        name="Pieza prueba",
-        points={
-            "Pinza_izq": Point(10, 10),
-            "Pinza_der": Point(11, 10),
-        },
-        lines=[],
-        metadata={"measurements": {"waist": 72}},
+def test_universal_export_svg_uses_spanish_header_measurements(tmp_path: Path) -> None:
+    content = _export_svg(tmp_path, "falda_basica", {"waist": 72, "hip": 98, "skirt_length": 60}, {"full_pattern": True})
+
+    assert "Cintura: 72 cm" in content
+    assert "Cadera: 98 cm" in content
+    assert "Largo falda: 60 cm" in content
+    assert "waist:" not in content
+    assert "skirt_length:" not in content
+
+
+def test_pants_visual_export_hides_technical_generated_point_names(tmp_path: Path) -> None:
+    content = _export_svg(
+        tmp_path,
+        "pantalon_basico",
+        {"waist": 84, "hip": 104, "outseam": 100, "inseam": 76},
     )
 
-    output = export_svg([piece], tmp_path / "labels.svg")
-    svg_text = output.read_text(encoding="utf-8")
-
-    assert "Pinza_izq" in svg_text
-    assert "Pinza_der" in svg_text
-    assert svg_text.count("font-size=\"11\"") >= 2
+    assert "line_1_start" not in content
+    assert "line_5_end" not in content
+    assert "Cintura pieza:" in content
+    assert "Cadera pieza:" in content
+    assert "Largo exterior pieza:" in content

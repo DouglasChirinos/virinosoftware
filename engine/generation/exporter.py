@@ -10,6 +10,9 @@ from typing import Any
 from engine.exports.dxf.writer import export_dxf
 from engine.exports.pdf.writer import export_pdf
 from engine.exports.svg.writer import export_svg
+from engine.exports.structural_curves import attach_structural_curves, suppress_visual_curves_when_structural
+from engine.exports.visual_curves import attach_visual_curves
+from engine.exports.visual_annotations import build_dimension_annotations
 from engine.generation.pattern_generator import (
     PatternGenerationRequest,
     PatternGenerationResult,
@@ -179,97 +182,78 @@ def normalize_pieces(raw_pieces: list[Any]) -> list[PatternPiece]:
 def _measurements_as_export_dict(measurements: Any) -> dict[str, Any]:
     if isinstance(measurements, dict):
         return dict(measurements)
-
     as_dict = getattr(measurements, "as_dict", None)
     if callable(as_dict):
         return dict(as_dict())
-
     if hasattr(measurements, "__dict__"):
-        return {
-            key: value
-            for key, value in vars(measurements).items()
-            if not key.startswith("_") and value is not None
-        }
-
+        return {key: value for key, value in vars(measurements).items() if not key.startswith("_") and value is not None}
     return {}
 
 
-def _format_measurement_value(value: Any) -> str:
-    if isinstance(value, float):
-        return f"{value:.2f}".rstrip("0").rstrip(".")
-    return str(value)
+def _piece_bounds(piece: PatternPiece) -> tuple[float, float, float, float]:
+    """Return bounds for one piece before visual export."""
+
+    xs: list[float] = []
+    ys: list[float] = []
+
+    for point in piece.points.values():
+        xs.append(float(point.x))
+        ys.append(float(point.y))
+
+    for line in piece.lines:
+        xs.extend([float(line.start.x), float(line.end.x)])
+        ys.extend([float(line.start.y), float(line.end.y)])
+
+    if not xs or not ys:
+        return (0.0, 0.0, 0.0, 0.0)
+
+    return min(xs), min(ys), max(xs), max(ys)
 
 
-def _make_dimension_annotation(
-    *,
-    label: str,
-    start: Point,
-    end: Point,
-    offset_x: float = 0.0,
-    offset_y: float = 0.0,
-) -> dict[str, Any]:
-    return {
-        "label": label,
-        "start": {"x": float(start.x), "y": float(start.y)},
-        "end": {"x": float(end.x), "y": float(end.y)},
-        "offset": {"x": float(offset_x), "y": float(offset_y)},
+def _translate_line(line: Any, dx: float, dy: float) -> Any:
+    return _make_export_line(
+        start=line.start.translate(dx=dx, dy=dy),
+        end=line.end.translate(dx=dx, dy=dy),
+        name=_line_name(line),
+        kind=_line_kind(line),
+    )
+
+
+def _translate_piece(piece: PatternPiece, dx: float, dy: float) -> None:
+    if not dx and not dy:
+        return
+
+    piece.points = {
+        name: point.translate(dx=dx, dy=dy)
+        for name, point in piece.points.items()
     }
+    piece.lines = [_translate_line(line, dx, dy) for line in piece.lines]
 
 
-def _segment_length(start: Point, end: Point) -> float:
-    return ((float(end.x) - float(start.x)) ** 2 + (float(end.y) - float(start.y)) ** 2) ** 0.5
+def _arrange_pieces_for_export(pieces: list[PatternPiece], gutter: float = 14.0) -> None:
+    """Place each piece in its own visual lane before PDF/SVG export.
 
-
-def _build_basic_skirt_dimensions(piece: PatternPiece, measurements: dict[str, Any]) -> list[dict[str, Any]]:
-    """Build edge dimensions using real geometric segment lengths.
-
-    Header measurements are body/input measurements. Edge labels must describe
-    the actual pattern side shown on the piece, otherwise the user may read a
-    quarter/half piece as if it were the full body contour.
+    Some MVP drafts, especially pantalon_basico, generate front and back pieces
+    from the same local origin. That is correct for drafting internals but wrong
+    for a product-facing export because pieces and dimensions overlap. This
+    layout step keeps each piece independent without changing its geometry.
+    Distances remain identical because only translation is applied.
     """
 
-    points = piece.points
-    annotations: list[dict[str, Any]] = []
+    cursor_x = 0.0
 
-    def has(*names: str) -> bool:
-        return all(name in points for name in names)
+    for index, piece in enumerate(pieces):
+        min_x, min_y, max_x, _max_y = _piece_bounds(piece)
+        width = max(max_x - min_x, 1.0)
+        dx = cursor_x - min_x
+        dy = -min_y
+        _translate_piece(piece, dx, dy)
+        piece.metadata["visual_layout_index"] = str(index)
+        piece.metadata["visual_layout_dx"] = str(dx)
+        piece.metadata["visual_layout_dy"] = str(dy)
+        cursor_x += width + gutter
 
-    def value(start_name: str, end_name: str) -> str:
-        return _format_measurement_value(
-            _segment_length(points[start_name], points[end_name])
-        )
 
-    if has("A_cintura_centro", "B_cintura_costado"):
-        annotations.append(
-            _make_dimension_annotation(
-                label=f"Cintura pieza: {value('A_cintura_centro', 'B_cintura_costado')} cm",
-                start=points["A_cintura_centro"],
-                end=points["B_cintura_costado"],
-                offset_y=-4.0,
-            )
-        )
-
-    if has("C_cadera_centro", "D_cadera_costado"):
-        annotations.append(
-            _make_dimension_annotation(
-                label=f"Cadera pieza: {value('C_cadera_centro', 'D_cadera_costado')} cm",
-                start=points["C_cadera_centro"],
-                end=points["D_cadera_costado"],
-                offset_y=4.0,
-            )
-        )
-
-    if has("A_cintura_centro", "E_bajo_centro"):
-        annotations.append(
-            _make_dimension_annotation(
-                label=f"Largo pieza: {value('A_cintura_centro', 'E_bajo_centro')} cm",
-                start=points["A_cintura_centro"],
-                end=points["E_bajo_centro"],
-                offset_x=-4.0,
-            )
-        )
-
-    return annotations
 def _attach_export_metadata(pieces: list[PatternPiece], generation_result: PatternGenerationResult) -> None:
     measurements = _measurements_as_export_dict(generation_result.measurements)
 
@@ -278,9 +262,7 @@ def _attach_export_metadata(pieces: list[PatternPiece], generation_result: Patte
         piece.metadata.setdefault("garment_name", generation_result.garment_name)
         piece.metadata.setdefault("draft_class_name", generation_result.draft_class_name)
         piece.metadata.setdefault("measurements", measurements)
-
-        if generation_result.garment_code == "falda_basica":
-            piece.metadata["dimension_annotations"] = _build_basic_skirt_dimensions(piece, measurements)
+        piece.metadata["dimension_annotations"] = build_dimension_annotations(piece, generation_result.garment_code)
 
 
 def _safe_output_name(output_name: str) -> str:
@@ -297,7 +279,11 @@ def _export_base_dir(output_dir: Path | str) -> Path:
 def export_generated_pattern(request: PatternExportRequest) -> PatternExportResult:
     generation_result = generate_pattern(request.generation_request)
     pieces = normalize_pieces(generation_result.pieces)
+    _arrange_pieces_for_export(pieces)
     _attach_export_metadata(pieces, generation_result)
+    attach_structural_curves(pieces, generation_result.garment_code)
+    attach_visual_curves(pieces, generation_result.garment_code)
+    suppress_visual_curves_when_structural(pieces)
     output_name = _safe_output_name(request.output_name)
     output_dir = _export_base_dir(request.output_dir)
 
@@ -320,9 +306,4 @@ def export_generated_pattern(request: PatternExportRequest) -> PatternExportResu
         pdf_path.parent.mkdir(parents=True, exist_ok=True)
         export_pdf(pieces, pdf_path)
 
-    return PatternExportResult(
-        generation_result=generation_result,
-        svg_path=svg_path,
-        dxf_path=dxf_path,
-        pdf_path=pdf_path,
-    )
+    return PatternExportResult(generation_result=generation_result, svg_path=svg_path, dxf_path=dxf_path, pdf_path=pdf_path)

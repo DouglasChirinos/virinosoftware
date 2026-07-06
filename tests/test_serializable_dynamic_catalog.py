@@ -35,7 +35,7 @@ def test_falda_evase_generates_from_universal_pattern_generator():
     assert result.garment_code == "falda_evase"
     assert result.garment_name == "Falda evase"
     assert result.draft_class_name == "FaldaEvaseSerializableDraft"
-    assert result.piece_count == 1
+    assert result.piece_count == 2
     assert result.pieces[0].name == "Falda evase delantera"
     assert len(result.pieces[0].lines) == 4
     assert result.pieces[0].points["C"] == (36.75, 60.0)
@@ -81,7 +81,7 @@ def test_falda_evase_exports_through_universal_flow():
     assert "GARMENT_CODE: falda_evase" in result.stdout
     assert "GARMENT_NAME: Falda evase" in result.stdout
     assert "DRAFT_CLASS: FaldaEvaseSerializableDraft" in result.stdout
-    assert "PIECE_COUNT: 1" in result.stdout
+    assert "PIECE_COUNT: 2" in result.stdout
 
     for relative_path in (
         Path("exports/svg") / f"{output_name}.svg",

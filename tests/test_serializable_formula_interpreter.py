@@ -72,7 +72,7 @@ def test_generates_geometry_from_short_basico_json_defaults():
 
     assert pattern.garment_code == "short_basico"
     assert pattern.garment_name == "Short basico"
-    assert pattern.piece_count == 1
+    assert pattern.piece_count == 2
     piece = pattern.pieces[0]
     points = {point.name: point for point in piece.points}
     assert points["A"].x == 0.0
@@ -82,6 +82,8 @@ def test_generates_geometry_from_short_basico_json_defaults():
     assert points["C"].x == 26.0
     assert points["C"].y == 45.0
     assert len(piece.lines) == 4
+    assert pattern.pieces[1].name == "Short basico posterior"
+    assert len(pattern.pieces[1].lines) == 4
 
 
 def test_generates_geometry_with_ease_formula():

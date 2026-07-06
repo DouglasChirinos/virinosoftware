@@ -118,7 +118,7 @@ def test_generate_summary_for_serializable_short() -> None:
     )
 
     assert summary.garment_code == "short_basico"
-    assert summary.piece_count == 1
+    assert summary.piece_count == 2
 
 
 def test_generate_summary_for_basic_pants() -> None:

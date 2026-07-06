@@ -3,20 +3,10 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Iterable
 
+from engine.exports.visual_annotations import displayable_point_names, format_measurements_for_header
 from engine.geometry.line import Line
 from engine.patterns.piece import PatternPiece
-
-MEASUREMENT_LABELS = {
-    "waist": "Cintura",
-    "hip": "Cadera",
-    "skirt_length": "Largo falda",
-    "outseam": "Largo exterior",
-    "inseam": "Entrepierna",
-    "ease": "Holgura",
-    "hip_depth": "Altura cadera",
-    "ease_hip": "Holgura cadera",
-    "ease_waist": "Holgura cintura",
-}
+from engine.exports.structural_curves import line_is_replaced_by_structural_curve
 
 
 def _is_line_sequence(value: object) -> bool:
@@ -73,20 +63,6 @@ def _garment_payload(pieces: list[PatternPiece]) -> tuple[str, str, dict[str, An
     return "", "", {}
 
 
-def _format_value(value: Any) -> str:
-    if isinstance(value, float):
-        return f"{value:.2f}".rstrip("0").rstrip(".")
-    return str(value)
-
-
-def _format_measurements(measurements: dict[str, Any]) -> list[str]:
-    lines: list[str] = []
-    for key in ("waist", "hip", "skirt_length", "outseam", "inseam", "ease", "hip_depth"):
-        if key in measurements:
-            lines.append(f"{MEASUREMENT_LABELS.get(key, key)}: {_format_value(measurements[key])} cm")
-    return lines
-
-
 def _draw_wrapped_line(canvas: Any, *, text: str, x: float, y: float, max_chars: int = 100, leading: float = 11.0) -> float:
     chunks = [text[index : index + max_chars] for index in range(0, len(text), max_chars)] or [""]
     for chunk in chunks:
@@ -106,20 +82,7 @@ def _overlaps(box: tuple[float, float, float, float], boxes: list[tuple[float, f
 def _label_position(*, x: float, y: float, text: str, font_size: float, occupied: list[tuple[float, float, float, float]]) -> tuple[float, float]:
     width = max(18.0, len(text) * font_size * 0.52)
     height = font_size + 2.0
-    offsets = [
-        (5, 5),
-        (5, -10),
-        (-width - 5, 5),
-        (-width - 5, -10),
-        (0, 14),
-        (0, -18),
-        (12, 14),
-        (12, -18),
-        (-width - 12, 14),
-        (-width - 12, -18),
-        (24, 5),
-        (-width - 24, 5),
-    ]
+    offsets = [(5, 5), (5, -10), (-width - 5, 5), (-width - 5, -10), (0, 14), (0, -18), (12, 14), (12, -18)]
     for dx, dy in offsets:
         label_x = x + dx
         label_y = y + dy
@@ -133,7 +96,66 @@ def _label_position(*, x: float, y: float, text: str, font_size: float, occupied
     return label_x, label_y
 
 
-def _draw_dimension(canvas: Any, tx: Any, ty: Any, dim: dict[str, Any], scale: float) -> None:
+
+
+def _draw_structural_curve(canvas: Any, tx: Any, ty: Any, curve: dict[str, Any]) -> None:
+    start = curve.get("start", {})
+    control1 = curve.get("control1", {})
+    control2 = curve.get("control2", {})
+    end = curve.get("end", {})
+    label = str(curve.get("label", "") or "")
+
+    x1 = tx(float(start.get("x", 0.0)))
+    y1 = ty(float(start.get("y", 0.0)))
+    cx1 = tx(float(control1.get("x", 0.0)))
+    cy1 = ty(float(control1.get("y", 0.0)))
+    cx2 = tx(float(control2.get("x", 0.0)))
+    cy2 = ty(float(control2.get("y", 0.0)))
+    x2 = tx(float(end.get("x", 0.0)))
+    y2 = ty(float(end.get("y", 0.0)))
+
+    path = canvas.beginPath()
+    path.moveTo(x1, y1)
+    path.curveTo(cx1, cy1, cx2, cy2, x2, y2)
+
+    canvas.setDash()
+    canvas.setLineWidth(1.1)
+    canvas.drawPath(path, stroke=1, fill=0)
+
+    canvas.setFont("Helvetica", 6.5)
+    canvas.drawString((x1 + x2) / 2 + 3, (y1 + y2) / 2 + 3, label)
+
+
+def _draw_curve(canvas: Any, tx: Any, ty: Any, curve: dict[str, Any]) -> None:
+    start = curve.get("start", {})
+    control1 = curve.get("control1", {})
+    control2 = curve.get("control2", {})
+    end = curve.get("end", {})
+    label = str(curve.get("label", "") or "")
+
+    x1 = tx(float(start.get("x", 0.0)))
+    y1 = ty(float(start.get("y", 0.0)))
+    cx1 = tx(float(control1.get("x", 0.0)))
+    cy1 = ty(float(control1.get("y", 0.0)))
+    cx2 = tx(float(control2.get("x", 0.0)))
+    cy2 = ty(float(control2.get("y", 0.0)))
+    x2 = tx(float(end.get("x", 0.0)))
+    y2 = ty(float(end.get("y", 0.0)))
+
+    path = canvas.beginPath()
+    path.moveTo(x1, y1)
+    path.curveTo(cx1, cy1, cx2, cy2, x2, y2)
+
+    canvas.setDash(5, 3)
+    canvas.setLineWidth(0.8)
+    canvas.drawPath(path, stroke=1, fill=0)
+    canvas.setDash()
+
+    canvas.setFont("Helvetica", 6.5)
+    canvas.drawString((x1 + x2) / 2 + 3, (y1 + y2) / 2 + 3, label)
+
+
+def _draw_dimension(canvas: Any, tx: Any, ty: Any, dim: dict[str, Any]) -> None:
     start = dim.get("start", {})
     end = dim.get("end", {})
     offset = dim.get("offset", {})
@@ -161,11 +183,6 @@ def _draw_dimension(canvas: Any, tx: Any, ty: Any, dim: dict[str, Any], scale: f
     canvas.line(x2, y2, dx2, dy2)
     canvas.line(dx1, dy1, dx2, dy2)
     canvas.setDash()
-    canvas.line(dx1 - 2, dy1 - 2, dx1 + 2, dy1 + 2)
-    canvas.line(dx1 - 2, dy1 + 2, dx1 + 2, dy1 - 2)
-    canvas.line(dx2 - 2, dy2 - 2, dx2 + 2, dy2 + 2)
-    canvas.line(dx2 - 2, dy2 + 2, dx2 + 2, dy2 - 2)
-
     mid_x = (dx1 + dx2) / 2
     mid_y = (dy1 + dy2) / 2
     canvas.setFont("Helvetica", 7)
@@ -195,26 +212,16 @@ def export_pdf(
     pattern_top = metadata_y - 52
 
     garment_code, garment_name, measurements = _garment_payload(normalized)
-    measurement_lines = _format_measurements(measurements)
+    measurement_lines = format_measurements_for_header(measurements)
 
     c.setFont("Helvetica-Bold", 12)
     c.drawString(margin, header_y, "Motor Patronaje 2D - Exportacion")
 
     c.setFont("Helvetica", 8)
     if garment_code or garment_name:
-        metadata_y = _draw_wrapped_line(
-            c,
-            text=f"Prenda: {(garment_code + ' - ' + garment_name).strip(' -')}",
-            x=margin,
-            y=metadata_y,
-        )
+        metadata_y = _draw_wrapped_line(c, text=f"Prenda: {(garment_code + ' - ' + garment_name).strip(' -')}", x=margin, y=metadata_y)
     if measurement_lines:
-        metadata_y = _draw_wrapped_line(
-            c,
-            text="Medidas: " + " | ".join(measurement_lines),
-            x=margin,
-            y=metadata_y,
-        )
+        metadata_y = _draw_wrapped_line(c, text="Medidas: " + " | ".join(measurement_lines), x=margin, y=metadata_y)
     piece_names = ", ".join(piece.name for piece in normalized)
     metadata_y = _draw_wrapped_line(c, text="Piezas: " + piece_names, x=margin, y=metadata_y)
     pattern_top = min(pattern_top, metadata_y - 14)
@@ -233,7 +240,14 @@ def export_pdf(
         return margin + (max_y - y_value) * scale
 
     for piece in normalized:
+
+        for curve in (piece.metadata or {}).get("visual_curves", []):
+            _draw_curve(c, tx, ty, curve)
+        structural_curves = (piece.metadata or {}).get("structural_curves", [])
         for line in piece.lines:
+            if line_is_replaced_by_structural_curve(line, structural_curves):
+                continue
+
             x1 = tx(float(line.start.x))
             y1 = ty(float(line.start.y))
             x2 = tx(float(line.end.x))
@@ -249,6 +263,9 @@ def export_pdf(
                 c.setLineWidth(1.0)
             c.line(x1, y1, x2, y2)
 
+        for curve in structural_curves:
+            _draw_structural_curve(c, tx, ty, curve)
+
         piece_points = list(piece.points.values())
         if piece_points:
             piece_min_x = min(float(point.x) for point in piece_points)
@@ -257,17 +274,20 @@ def export_pdf(
             c.drawString(tx(piece_min_x), ty(piece_max_y) - 12, piece.name)
 
         for dim in (piece.metadata or {}).get("dimension_annotations", []):
-            _draw_dimension(c, tx, ty, dim, scale)
+            _draw_dimension(c, tx, ty, dim)
 
-        c.setDash()
-        c.setFont("Helvetica", 6.8)
-        occupied: list[tuple[float, float, float, float]] = []
-        for name, point in sorted(piece.points.items(), key=lambda item: (float(item[1].y), float(item[1].x), item[0])):
-            x = tx(float(point.x))
-            y = ty(float(point.y))
-            c.circle(x, y, 1.2, stroke=1, fill=1)
-            label_x, label_y = _label_position(x=x, y=y, text=name, font_size=6.8, occupied=occupied)
-            c.drawString(label_x, label_y, name)
+        names_to_show = displayable_point_names(piece.points)
+        if names_to_show:
+            c.setDash()
+            c.setFont("Helvetica", 6.8)
+            occupied: list[tuple[float, float, float, float]] = []
+            for name in sorted(names_to_show, key=lambda item: (float(piece.points[item].y), float(piece.points[item].x), item)):
+                point = piece.points[name]
+                x = tx(float(point.x))
+                y = ty(float(point.y))
+                c.circle(x, y, 1.2, stroke=1, fill=1)
+                label_x, label_y = _label_position(x=x, y=y, text=name, font_size=6.8, occupied=occupied)
+                c.drawString(label_x, label_y, name)
 
     c.showPage()
     c.save()

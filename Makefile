@@ -3,7 +3,7 @@ PIP := .venv/bin/pip
 PYTEST := .venv/bin/pytest
 RUFF := .venv/bin/ruff
 
-.PHONY: venv install test lint generate-skirt generate-all-exports run-qa show-exports show-reports run-gui clean generate-size-skirt show-size-reports infer-size generate-measurement-skirt validate-fase-40
+.PHONY: venv install test lint generate-skirt generate-all-exports run-qa show-exports show-reports run-gui clean generate-size-skirt show-size-reports infer-size generate-measurement-skirt validate-fase-40 validate-piece-completeness validate-fase-40-1a validate-fase-40-1b validate-fase-40-2 validate-fase-40-3 validate-fase-41
 
 venv:
 	python3 -m venv .venv
@@ -105,8 +105,50 @@ export-serializable-catalog:
 	.venv/bin/python scripts/export_serializable_catalog.py --definitions-dir examples/garments --output-dir exports/catalog
 
 validate-fase-40:
-	.venv/bin/python -m pytest tests/test_gui_universal_controller.py tests/test_fase_40_export_visual_layout.py -q
+	.venv/bin/python -m pytest tests/test_gui_universal_controller.py tests/test_export_visual_metadata.py tests/test_fase_40_export_visual_layout.py tests/test_fase_40_1_cotas_visuales_universales.py tests/test_fase_40_1_layout_piezas_independientes.py -q
 	.venv/bin/python scripts/list_garments.py
 	.venv/bin/python scripts/generate_pattern.py --garment short_basico --waist 84 --hip 104 --outseam 45 --inseam 20
 	.venv/bin/python scripts/generate_pattern.py --garment falda_evase --waist 73 --hip 99 --skirt-length 60 --ease 12
 	.venv/bin/python scripts/generate_pattern.py --garment falda_basica --waist 73 --hip 99 --skirt-length 60 --ease 2
+	@echo VALIDATE_FASE_40_1_OK
+
+validate-piece-completeness:
+	.venv/bin/python scripts/validate_piece_completeness.py
+
+validate-fase-40-1a:
+	.venv/bin/python -m pytest tests/test_fase_40_1a_piece_completeness.py -q
+
+validate-fase-40-1b:
+	.venv/bin/python -m pytest tests/test_fase_40_1a_piece_completeness.py tests/test_fase_40_1b_serializable_complete_pieces.py -q
+	.venv/bin/python scripts/validate_piece_completeness.py
+	.venv/bin/python scripts/validate_serializable_catalog.py --definitions-dir examples/garments
+	.venv/bin/python scripts/generate_serializable_catalog.py --definitions-dir examples/garments
+
+validate-fase-40-2:
+	.venv/bin/python -m pytest tests/test_fase_40_2_visual_curves.py -q
+	.venv/bin/python -m pytest tests/test_fase_40_1a_piece_completeness.py tests/test_fase_40_1b_serializable_complete_pieces.py -q
+	.venv/bin/python scripts/validate_piece_completeness.py
+
+validate-fase-40-3:
+	.venv/bin/python -m pytest tests/test_fase_40_3_structural_curves.py -q
+	.venv/bin/python -m pytest tests/test_fase_40_2_visual_curves.py -q
+	.venv/bin/python scripts/validate_piece_completeness.py
+
+
+validate-fase-40-3b:
+	.venv/bin/python -m pytest tests/test_fase_40_3b_curve_semantics.py -q
+
+
+validate-fase-40-3c:
+	.venv/bin/python -m pytest tests/test_fase_40_3c_concavity_direction.py -q
+
+
+validate-fase-40-3d:
+	.venv/bin/python -m pytest tests/test_fase_40_3d_crotch_extension_formula.py -q
+
+validate-fase-41:
+	.venv/bin/python -m pytest tests/test_fase_41_transformaciones_editables.py -q
+
+
+validate-fase-42:
+	.venv/bin/python -m pytest tests/test_fase_42_editor_visual_mvp_gui.py -q

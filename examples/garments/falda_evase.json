@@ -1,12 +1,12 @@
 {
   "code": "falda_evase",
   "name": "Falda evase",
-  "version": "0.1",
+  "version": "0.2.1-mvp",
   "measurements": [
     {"name": "waist", "label": "Cintura", "unit": "cm", "default": 73},
     {"name": "hip", "label": "Cadera", "unit": "cm", "default": 99},
-    {"name": "skirt_length", "label": "Largo de falda", "unit": "cm", "default": 60},
-    {"name": "ease", "label": "Amplitud evase", "unit": "cm", "default": 12}
+    {"name": "skirt_length", "label": "Largo falda", "unit": "cm", "default": 60},
+    {"name": "ease", "label": "Holgura / Evase", "unit": "cm", "default": 12}
   ],
   "pieces": [
     {
@@ -25,14 +25,36 @@
       ],
       "metadata": {
         "side": "front",
-        "silhouette": "evase",
-        "industrial_status": "dsl_growth_validation"
+        "piece_role": "delantero",
+        "industrial_status": "mvp_geometric"
+      }
+    },
+    {
+      "name": "Falda evase posterior",
+      "points": {
+        "A": [0, 0],
+        "B": ["waist / 4 + 1", 0],
+        "C": ["hip / 4 + ease + 1", "skirt_length"],
+        "D": ["-ease", "skirt_length"]
+      },
+      "lines": [
+        ["A", "B"],
+        ["B", "C"],
+        ["C", "D"],
+        ["D", "A"]
+      ],
+      "metadata": {
+        "side": "back",
+        "piece_role": "posterior",
+        "industrial_status": "mvp_geometric",
+        "notes": "Posterior MVP diferenciado con cintura y cadera ligeramente mayores."
       }
     }
   ],
   "metadata": {
     "category": "bottom",
-    "phase": "32",
-    "industrial_status": "dsl_growth_validation"
+    "phase": "40.1B",
+    "industrial_status": "mvp_geometric",
+    "product_warning": "Completo en piezas delantero/posterior para GUI MVP."
   }
 }

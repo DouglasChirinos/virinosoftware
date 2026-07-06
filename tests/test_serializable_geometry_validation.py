@@ -38,11 +38,15 @@ def test_short_basico_geometry_report_has_positive_bbox() -> None:
         pieces=result.generation_result.pieces,
     )
 
-    assert report.piece_count == 1
+    assert report.piece_count == 2
     piece = report.piece_reports[0]
     assert piece.line_count == 4
     assert piece.point_count == 4
     assert piece.width == pytest.approx(26.0)
+    posterior = report.piece_reports[1]
+    assert posterior.line_count == 4
+    assert posterior.point_count == 4
+    assert posterior.width == pytest.approx(28.0)
     assert piece.height == pytest.approx(45.0)
 
 
@@ -70,13 +74,19 @@ def test_falda_evase_geometry_report_has_expected_expanded_bbox() -> None:
         pieces=result.generation_result.pieces,
     )
 
-    assert report.piece_count == 1
+    assert report.piece_count == 2
     piece = report.piece_reports[0]
     assert piece.line_count == 4
     assert piece.point_count == 4
     assert piece.width == pytest.approx(48.75)
     assert piece.min_x == pytest.approx(-12.0)
     assert piece.max_x == pytest.approx(36.75)
+    posterior = report.piece_reports[1]
+    assert posterior.line_count == 4
+    assert posterior.point_count == 4
+    assert posterior.width == pytest.approx(49.75)
+    assert posterior.min_x == pytest.approx(-12.0)
+    assert posterior.max_x == pytest.approx(37.75)
     assert piece.height == pytest.approx(60.0)
 
 
