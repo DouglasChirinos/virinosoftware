@@ -152,3 +152,15 @@ validate-fase-41:
 
 validate-fase-42:
 	.venv/bin/python -m pytest tests/test_fase_42_editor_visual_mvp_gui.py -q
+
+validate-fase-43a:
+	.venv/bin/python -m pytest tests/test_fase_43a_canvas_readonly.py tests/test_fase_43a_gui_tabs_contract.py -q
+
+validate-fase-43b:
+	.venv/bin/python -m pytest tests/test_fase_43b_canvas_point_selection.py -q
+
+validate-fase-43c:
+	.venv/bin/python -m pytest tests/test_fase_43c_canvas_keyboard_move.py tests/test_fase_43c_incremental_transform_stability.py -q
+
+validate-fase-43d:
+	.venv/bin/python -m pytest tests/test_fase_43d_visual_flow_export_variant.py -q

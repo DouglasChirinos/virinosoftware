@@ -113,10 +113,16 @@ def build_move_point_operation(*, piece: str, point: str, dx: float, dy: float) 
 
 
 def apply_editor_operation(state: EditorPatternState, operation: TransformOperation) -> EditorPatternState:
-    """Return a new editor state with operation appended and applied."""
+    """Return a new editor state with operation appended and applied.
+
+    The variant keeps the complete transformation history, but the visual state
+    must apply only the new operation to the current pieces. Reapplying the full
+    history over pieces that were already transformed duplicates previous
+    movements and creates erratic keyboard behavior.
+    """
 
     new_variant = state.variant.append(operation)
-    transformed_pieces = apply_transformations(state.pieces, new_variant.transformations)
+    transformed_pieces = apply_transformations(state.pieces, (operation,))
     return EditorPatternState(
         garment_code=state.garment_code,
         garment_name=state.garment_name,
@@ -125,7 +131,6 @@ def apply_editor_operation(state: EditorPatternState, operation: TransformOperat
         variant=new_variant,
         generation_result=state.generation_result,
     )
-
 
 def save_variant_json(state: EditorPatternState, output_dir: Path | str = Path("variants")) -> Path:
     output_dir = Path(output_dir)

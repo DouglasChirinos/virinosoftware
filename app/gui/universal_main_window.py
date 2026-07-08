@@ -10,6 +10,8 @@ try:
 except ImportError as exc:  # pragma: no cover
     raise SystemExit("Falta customtkinter. Ejecuta: python3 -m pip install -r requirements.txt") from exc
 
+from app.gui.pattern_canvas import ReadOnlyPatternCanvas
+
 from app.controllers.pattern_editor_controller import (
     EditorPatternState,
     apply_editor_operation,
@@ -49,7 +51,7 @@ class UniversalMainWindow(ctk.CTk):
         super().__init__()
 
         self.title("VirinoSoftware - Patronaje 2D")
-        self.geometry("980x760")
+        self.geometry("1280x900")
 
         ctk.set_appearance_mode("System")
         ctk.set_default_color_theme("blue")
@@ -77,7 +79,7 @@ class UniversalMainWindow(ctk.CTk):
 
     def _build_layout(self) -> None:
         self.grid_columnconfigure(0, weight=1)
-        self.grid_rowconfigure(6, weight=1)
+        self.grid_rowconfigure(2, weight=1)
 
         title = ctk.CTkLabel(
             self,
@@ -92,8 +94,19 @@ class UniversalMainWindow(ctk.CTk):
         )
         subtitle.grid(row=1, column=0, padx=20, pady=(0, 10), sticky="w")
 
-        selector_frame = ctk.CTkFrame(self)
-        selector_frame.grid(row=2, column=0, padx=20, pady=10, sticky="ew")
+        self.main_tabs = ctk.CTkTabview(self)
+        self.main_tabs.grid(row=2, column=0, padx=20, pady=(10, 20), sticky="nsew")
+
+        self.editor_tab = self.main_tabs.add("Generacion / Editor")
+        self.pattern_tab = self.main_tabs.add("Vista patron")
+
+        self.editor_tab.grid_columnconfigure(0, weight=1)
+        self.editor_tab.grid_rowconfigure(5, weight=1)
+        self.pattern_tab.grid_columnconfigure(0, weight=1)
+        self.pattern_tab.grid_rowconfigure(0, weight=1)
+
+        selector_frame = ctk.CTkFrame(self.editor_tab)
+        selector_frame.grid(row=0, column=0, padx=12, pady=10, sticky="ew")
         selector_frame.grid_columnconfigure(1, weight=1)
 
         ctk.CTkLabel(selector_frame, text="Prenda").grid(
@@ -118,12 +131,12 @@ class UniversalMainWindow(ctk.CTk):
             placeholder_text="Opcional. Ejemplo: short_cliente_maria",
         ).grid(row=1, column=1, padx=12, pady=12, sticky="ew")
 
-        self.measurements_frame = ctk.CTkFrame(self)
-        self.measurements_frame.grid(row=3, column=0, padx=20, pady=10, sticky="ew")
+        self.measurements_frame = ctk.CTkFrame(self.editor_tab)
+        self.measurements_frame.grid(row=1, column=0, padx=12, pady=10, sticky="ew")
         self.measurements_frame.grid_columnconfigure(1, weight=1)
 
-        actions_frame = ctk.CTkFrame(self)
-        actions_frame.grid(row=4, column=0, padx=20, pady=10, sticky="ew")
+        actions_frame = ctk.CTkFrame(self.editor_tab)
+        actions_frame.grid(row=2, column=0, padx=12, pady=10, sticky="ew")
         actions_frame.grid_columnconfigure((0, 1), weight=1)
 
         ctk.CTkButton(actions_frame, text="Generar", command=self._on_generate).grid(
@@ -133,8 +146,8 @@ class UniversalMainWindow(ctk.CTk):
             row=0, column=1, padx=12, pady=12, sticky="ew"
         )
 
-        self.editor_frame = ctk.CTkFrame(self)
-        self.editor_frame.grid(row=5, column=0, padx=20, pady=10, sticky="ew")
+        self.editor_frame = ctk.CTkFrame(self.editor_tab)
+        self.editor_frame.grid(row=3, column=0, padx=12, pady=10, sticky="ew")
         self.editor_frame.grid_columnconfigure((1, 3, 5), weight=1)
 
         ctk.CTkLabel(
@@ -174,8 +187,18 @@ class UniversalMainWindow(ctk.CTk):
         ctk.CTkButton(self.editor_frame, text="Guardar variante JSON", command=self._on_editor_save_variant).grid(row=4, column=0, columnspan=3, padx=12, pady=8, sticky="ew")
         ctk.CTkButton(self.editor_frame, text="Exportar variante SVG/DXF/PDF", command=self._on_editor_export_variant).grid(row=4, column=3, columnspan=3, padx=12, pady=8, sticky="ew")
 
-        self.output_text = ctk.CTkTextbox(self, height=220)
-        self.output_text.grid(row=6, column=0, padx=20, pady=(10, 20), sticky="nsew")
+        self.output_text = ctk.CTkTextbox(self.editor_tab, height=160)
+        self.output_text.grid(row=4, column=0, padx=12, pady=(10, 12), sticky="ew")
+
+        self.pattern_canvas = ReadOnlyPatternCanvas(
+            self.pattern_tab,
+            height=680,
+            on_point_selected=self._on_canvas_point_selected,
+            on_point_move_requested=self._on_canvas_point_move_requested,
+            keyboard_step_cm=0.5,
+        )
+        self.pattern_canvas.grid(row=0, column=0, padx=12, pady=12, sticky="nsew")
+        self.pattern_canvas.clear()
 
     def _selected_option(self):
         return self.garment_by_label.get(self.garment_var.get())
@@ -186,6 +209,8 @@ class UniversalMainWindow(ctk.CTk):
 
         self.measurement_entries.clear()
         self.editor_state = None
+        if hasattr(self, "pattern_canvas"):
+            self.pattern_canvas.clear()
         option = self._selected_option()
 
         if option is None:
@@ -208,9 +233,78 @@ class UniversalMainWindow(ctk.CTk):
             {name: entry.get() for name, entry in self.measurement_entries.items()}
         )
 
+    def _on_canvas_point_selected(self, piece_name: str, point_name: str) -> None:
+        """Synchronize canvas point selection with existing editor controls."""
+
+        self.editor_piece_var.set(piece_name)
+        self._refresh_editor_points()
+        self.editor_point_var.set(point_name)
+
+        self.output_text.delete("1.0", "end")
+        self.output_text.insert(
+            "1.0",
+            "\n".join(
+                [
+                    "SELECCION VISUAL OK",
+                    f"PIEZA: {piece_name}",
+                    f"PUNTO: {point_name}",
+                    "",
+                    "Fase 43B solo selecciona puntos.",
+                    "El movimiento visual corresponde a Fase 43C.",
+                ]
+            ),
+        )
+
+    def _on_canvas_point_move_requested(self, piece_name: str, point_name: str, dx: float, dy: float) -> None:
+        """Apply keyboard point movement through the transformation contract."""
+
+        if self.editor_state is None:
+            return
+
+        try:
+            self.editor_piece_var.set(piece_name)
+            self._refresh_editor_points()
+            self.editor_point_var.set(point_name)
+            self.editor_dx_var.set(str(dx))
+            self.editor_dy_var.set(str(dy))
+
+            operation = build_move_point_operation(
+                piece=piece_name,
+                point=point_name,
+                dx=float(dx),
+                dy=float(dy),
+            )
+            self.editor_state = apply_editor_operation(self.editor_state, operation)
+
+            self.pattern_canvas.draw_pattern(self.editor_state.pieces)
+            self.main_tabs.set("Vista patron")
+
+            self.output_text.delete("1.0", "end")
+            self.output_text.insert(
+                "1.0",
+                "\n".join(
+                    [
+                        "MOVIMIENTO VISUAL OK",
+                        f"PIEZA: {piece_name}",
+                        f"PUNTO: {point_name}",
+                        f"DX_CM: {dx}",
+                        f"DY_CM: {dy}",
+                        "",
+                        "Operacion registrada como transformacion no destructiva.",
+                        "El patron base no se modifica.",
+                    ]
+                ),
+            )
+        except Exception as exc:  # noqa: BLE001
+            messagebox.showerror("Error de movimiento visual", str(exc))
+
     def _write_output(self, lines: list[str]) -> None:
         self.output_text.delete("1.0", "end")
         self.output_text.insert("1.0", "\n".join(lines))
+        if hasattr(self, "pattern_canvas") and self.editor_state is not None:
+            self.pattern_canvas.draw_pattern(self.editor_state.pieces)
+            if hasattr(self, "main_tabs"):
+                self.main_tabs.set("Vista patron")
 
     def _on_generate(self) -> None:
         try:
