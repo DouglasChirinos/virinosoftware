@@ -14,6 +14,7 @@ No movement, drag-and-drop or CAD editing is implemented here yet.
 from __future__ import annotations
 
 import math
+import re
 import tkinter as tk
 from dataclasses import dataclass
 from typing import Any, Callable, Iterable
@@ -419,3 +420,159 @@ class ReadOnlyPatternCanvas(ctk.CTkFrame):
 
         if label_x is not None and label_y is not None:
             self.canvas.create_text(label_x, max(label_y - 18, 10), text=piece_name, anchor="w")
+
+    def get_selected_point_info(self):
+        """Return user-facing information for the currently selected point.
+
+        The canvas keeps the technical point identifiers because they are part of
+        the transformation contract. This method exposes a stable UI-friendly
+        dictionary without mutating geometry.
+        """
+        selected = getattr(self, "selected_point", None)
+        if not selected:
+            return {
+                "has_selection": False,
+                "piece_name": "",
+                "point_id": "",
+                "human_name": "Sin punto seleccionado",
+                "x": None,
+                "y": None,
+            }
+
+        piece_name = ""
+        point_id = ""
+        x_value = None
+        y_value = None
+
+        if isinstance(selected, dict):
+            piece_name = str(selected.get("piece_name") or selected.get("piece") or "")
+            point_id = str(selected.get("point_id") or selected.get("point") or selected.get("id") or "")
+            x_value = selected.get("x")
+            y_value = selected.get("y")
+        elif isinstance(selected, (tuple, list)):
+            if len(selected) >= 1:
+                piece_name = str(selected[0])
+            if len(selected) >= 2:
+                point_id = str(selected[1])
+            if len(selected) >= 3:
+                x_value = selected[2]
+            if len(selected) >= 4:
+                y_value = selected[3]
+        else:
+            point_id = str(selected)
+
+        # Prefer live geometry coordinates when the canvas exposes them through
+        # common internal attributes used by previous phases.
+        resolved = self._resolve_selected_point_coordinates(piece_name, point_id)
+        if resolved is not None:
+            piece_name, point_id, x_value, y_value = resolved
+
+        return {
+            "has_selection": bool(point_id),
+            "piece_name": piece_name,
+            "point_id": point_id,
+            "human_name": self.humanize_point_name(point_id),
+            "x": x_value,
+            "y": y_value,
+        }
+
+    def _resolve_selected_point_coordinates(self, piece_name, point_id):
+        """Best-effort coordinate lookup for the selected point.
+
+        This intentionally supports several lightweight geometry shapes because
+        the canvas is a GUI adapter, not the geometry source of truth.
+        """
+        selected = getattr(self, "selected_point", None)
+        candidates = []
+        for attr in ("pieces", "pattern_pieces", "current_pieces", "_pieces"):
+            value = getattr(self, attr, None)
+            if value:
+                candidates.append(value)
+        pattern = getattr(self, "pattern", None) or getattr(self, "current_pattern", None)
+        if pattern is not None:
+            for attr in ("pieces", "pattern_pieces"):
+                value = getattr(pattern, attr, None)
+                if value:
+                    candidates.append(value)
+
+        for pieces in candidates:
+            iterable = pieces.values() if isinstance(pieces, dict) else pieces
+            for piece in iterable:
+                current_piece_name = self._read_value(piece, "name", "piece_name", default="")
+                points = self._read_value(piece, "points", default=None)
+                if not points:
+                    continue
+                point_items = points.items() if isinstance(points, dict) else enumerate(points)
+                for key, point in point_items:
+                    current_point_id = str(self._read_value(point, "id", "name", "point_id", default=key))
+                    if point_id and current_point_id != point_id:
+                        continue
+                    if piece_name and current_piece_name and current_piece_name != piece_name:
+                        continue
+                    x_value = self._read_value(point, "x", default=None)
+                    y_value = self._read_value(point, "y", default=None)
+                    return str(current_piece_name), current_point_id, x_value, y_value
+
+        if isinstance(selected, dict):
+            return (
+                str(selected.get("piece_name") or selected.get("piece") or piece_name or ""),
+                str(selected.get("point_id") or selected.get("point") or selected.get("id") or point_id or ""),
+                selected.get("x"),
+                selected.get("y"),
+            )
+        return None
+
+    @staticmethod
+    def _read_value(obj, *names, default=None):
+        for name in names:
+            if isinstance(obj, dict) and name in obj:
+                return obj[name]
+            if hasattr(obj, name):
+                return getattr(obj, name)
+        return default
+
+    @staticmethod
+    def humanize_point_name(point_id):
+        """Convert technical point ids into labels understandable by users."""
+        if not point_id:
+            return "Sin punto seleccionado"
+        raw = str(point_id)
+        normalized = raw.lower()
+        dictionary = {
+            "waist": "Cintura",
+            "cintura": "Cintura",
+            "hip": "Cadera",
+            "cadera": "Cadera",
+            "rise": "Tiro",
+            "tiro": "Tiro",
+            "crotch": "Entrepierna",
+            "entrepierna": "Entrepierna",
+            "hem": "Bajo",
+            "bajo": "Bajo",
+            "center": "Centro",
+            "centro": "Centro",
+            "side": "Costado",
+            "costado": "Costado",
+            "front": "Delantero",
+            "delantero": "Delantero",
+            "back": "Posterior",
+            "posterior": "Posterior",
+            "start": "Inicio",
+            "end": "Fin",
+            "line": "Linea",
+            "curve": "Curva",
+            "control": "Control",
+        }
+        tokens = [token for token in re.split(r"[_\-\s]+", normalized) if token]
+        if not tokens:
+            return raw
+        label_tokens = []
+        for token in tokens:
+            if token.isdigit():
+                label_tokens.append(token)
+            else:
+                label_tokens.append(dictionary.get(token, token.capitalize()))
+        return " ".join(label_tokens)
+
+# Fase 44A stable public alias
+PatternCanvas = ReadOnlyPatternCanvas

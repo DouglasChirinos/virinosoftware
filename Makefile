@@ -164,3 +164,6 @@ validate-fase-43c:
 
 validate-fase-43d:
 	.venv/bin/python -m pytest tests/test_fase_43d_visual_flow_export_variant.py -q
+
+validate-fase-44a:
+	.venv/bin/python -m pytest tests/test_fase_44a_usabilidad_punto_seleccionado.py -q

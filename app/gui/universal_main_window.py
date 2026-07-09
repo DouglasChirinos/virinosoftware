@@ -452,3 +452,50 @@ class UniversalMainWindow(ctk.CTk):
             self._write_output(lines)
         except Exception as exc:  # noqa: BLE001
             messagebox.showerror("Error exportar variante", str(exc))
+
+
+# ---- Fase 44A helpers: selected point usability panel ----
+def _fase44a_format_coordinate(value):
+    if value is None or value == "":
+        return "-"
+    try:
+        return f"{float(value):.2f} cm"
+    except (TypeError, ValueError):
+        return str(value)
+
+
+def _fase44a_get_canvas_selection_info(canvas):
+    if canvas is None:
+        return {
+            "has_selection": False,
+            "piece_name": "",
+            "point_id": "",
+            "human_name": "Sin punto seleccionado",
+            "x": None,
+            "y": None,
+        }
+    getter = getattr(canvas, "get_selected_point_info", None)
+    if callable(getter):
+        return getter()
+    return {
+        "has_selection": False,
+        "piece_name": "",
+        "point_id": "",
+        "human_name": "Sin punto seleccionado",
+        "x": None,
+        "y": None,
+    }
+
+
+def _fase44a_build_selection_summary(selection_info, step_cm=0.5):
+    if not selection_info or not selection_info.get("has_selection"):
+        return "Punto seleccionado: ninguno | Paso: %.1f cm" % float(step_cm)
+    return (
+        f"Pieza: {selection_info.get('piece_name') or '-'} | "
+        f"Punto: {selection_info.get('human_name') or selection_info.get('point_id') or '-'} | "
+        f"Tecnico: {selection_info.get('point_id') or '-'} | "
+        f"X: {_fase44a_format_coordinate(selection_info.get('x'))} | "
+        f"Y: {_fase44a_format_coordinate(selection_info.get('y'))} | "
+        f"Paso: {float(step_cm):.1f} cm"
+    )
+
