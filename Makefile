@@ -173,3 +173,11 @@ validate-fase-44b:
 
 validate-fase-44c:
 	.venv/bin/python -m pytest tests/test_fase_44c_reset_feedback_gui.py -q
+
+validate-fase-44d:
+	@test -f docs/56_Fase_44D_Prueba_Visual_Manual_Editor.md
+	@grep -q "Fase 44D" docs/56_Fase_44D_Prueba_Visual_Manual_Editor.md
+	@grep -q "Generar patrón" docs/56_Fase_44D_Prueba_Visual_Manual_Editor.md
+	@grep -q "Restaurar punto" docs/56_Fase_44D_Prueba_Visual_Manual_Editor.md
+	@grep -q "Guardar/exportar variante" docs/56_Fase_44D_Prueba_Visual_Manual_Editor.md
+	@echo "FASE_44D_MANUAL_CHECKLIST_OK"

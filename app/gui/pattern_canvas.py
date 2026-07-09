@@ -492,12 +492,172 @@ class ReadOnlyPatternCanvas(ctk.CTkFrame):
 
     @classmethod
     def _fase44c_selection_xy(cls, selection_info):
-        x_value = cls._fase44c_info_get(selection_info, "x_cm", "x", "coord_x")
-        y_value = cls._fase44c_info_get(selection_info, "y_cm", "y", "coord_y")
+        x_value = cls._fase44c_info_get(
+            selection_info,
+            "x_cm",
+            "x",
+            "coord_x",
+            "current_x_cm",
+            "selected_x_cm",
+        )
+        y_value = cls._fase44c_info_get(
+            selection_info,
+            "y_cm",
+            "y",
+            "coord_y",
+            "current_y_cm",
+            "selected_y_cm",
+        )
+        if x_value is None and isinstance(selection_info, dict):
+            coordinates = selection_info.get("coordinates") or selection_info.get("coords")
+            if isinstance(coordinates, dict):
+                x_value = coordinates.get("x_cm") or coordinates.get("x")
+                y_value = coordinates.get("y_cm") or coordinates.get("y")
+            elif isinstance(coordinates, (tuple, list)) and len(coordinates) >= 2:
+                x_value, y_value = coordinates[0], coordinates[1]
+
         try:
             return float(x_value), float(y_value)
         except (TypeError, ValueError):
             return None
+
+    def _fase44d_selected_point_ref(self):
+        selected = getattr(self, "selected_point", None)
+
+        if callable(selected):
+            try:
+                selected = selected()
+            except TypeError:
+                selected = None
+
+        if selected is not None:
+            return selected
+
+        for attr_name in (
+            "_selected_point",
+            "selected_point_ref",
+            "_selected_point_ref",
+            "current_selected_point",
+            "_current_selected_point",
+        ):
+            candidate = getattr(self, attr_name, None)
+            if callable(candidate):
+                try:
+                    candidate = candidate()
+                except TypeError:
+                    candidate = None
+            if candidate is not None:
+                return candidate
+
+        return None
+
+    @staticmethod
+    def _fase44c_point_ref_key(selected_point):
+        if selected_point is None:
+            return None
+
+        if isinstance(selected_point, dict):
+            piece_name = (
+                selected_point.get("piece_name")
+                or selected_point.get("piece")
+                or selected_point.get("piece_id")
+                or selected_point.get("pieza")
+            )
+            point_name = (
+                selected_point.get("point_name")
+                or selected_point.get("point")
+                or selected_point.get("point_id")
+                or selected_point.get("punto")
+                or selected_point.get("technical_name")
+                or selected_point.get("name")
+            )
+            if piece_name is not None and point_name is not None:
+                return str(piece_name), str(point_name)
+
+        for piece_attr in ("piece_name", "piece", "piece_id", "pieza"):
+            for point_attr in (
+                "point_name",
+                "point",
+                "point_id",
+                "punto",
+                "technical_name",
+                "name",
+            ):
+                if hasattr(selected_point, piece_attr) and hasattr(selected_point, point_attr):
+                    return (
+                        str(getattr(selected_point, piece_attr)),
+                        str(getattr(selected_point, point_attr)),
+                    )
+
+        if isinstance(selected_point, (tuple, list)) and len(selected_point) >= 2:
+            return str(selected_point[0]), str(selected_point[1])
+
+        return ("selected_point_ref", str(id(selected_point)))
+
+    @staticmethod
+    def _fase44c_point_ref_xy(selected_point):
+        if selected_point is None:
+            return None
+
+        if isinstance(selected_point, dict):
+            for x_name, y_name in (
+                ("x_cm", "y_cm"),
+                ("x", "y"),
+                ("coord_x", "coord_y"),
+                ("current_x_cm", "current_y_cm"),
+            ):
+                if x_name in selected_point and y_name in selected_point:
+                    try:
+                        return float(selected_point[x_name]), float(selected_point[y_name])
+                    except (TypeError, ValueError):
+                        return None
+
+        for x_attr, y_attr in (
+            ("x_cm", "y_cm"),
+            ("x", "y"),
+            ("coord_x", "coord_y"),
+            ("current_x_cm", "current_y_cm"),
+        ):
+            if hasattr(selected_point, x_attr) and hasattr(selected_point, y_attr):
+                try:
+                    return (
+                        float(getattr(selected_point, x_attr)),
+                        float(getattr(selected_point, y_attr)),
+                    )
+                except (TypeError, ValueError):
+                    return None
+
+        if isinstance(selected_point, (tuple, list)) and len(selected_point) >= 4:
+            try:
+                return float(selected_point[2]), float(selected_point[3])
+            except (TypeError, ValueError):
+                return None
+
+        return None
+
+    def _fase44c_current_selection_key(self, selection_info=None):
+        if selection_info is None:
+            selection_info = self.get_selected_point_info()
+
+        key = self._fase44c_selection_key(selection_info)
+        if key is not None:
+            return key
+
+        selected_ref_resolver = getattr(self, "_fase44d_selected_point_ref", None)
+        selected_ref = selected_ref_resolver() if callable(selected_ref_resolver) else getattr(self, "selected_point", None)
+        return self._fase44c_point_ref_key(selected_ref)
+
+    def _fase44c_current_selection_xy(self, selection_info=None):
+        if selection_info is None:
+            selection_info = self.get_selected_point_info()
+
+        xy = self._fase44c_selection_xy(selection_info)
+        if xy is not None:
+            return xy
+
+        selected_ref_resolver = getattr(self, "_fase44d_selected_point_ref", None)
+        selected_ref = selected_ref_resolver() if callable(selected_ref_resolver) else getattr(self, "selected_point", None)
+        return self._fase44c_point_ref_xy(selected_ref)
 
     def _fase44c_baselines(self):
         if not hasattr(self, "_selected_point_baselines"):
@@ -505,23 +665,24 @@ class ReadOnlyPatternCanvas(ctk.CTkFrame):
         return self._selected_point_baselines
 
     def capture_selected_point_baseline(self, selection_info=None) -> bool:
-        if selection_info is None:
-            selection_info = self.get_selected_point_info()
-
-        key = self._fase44c_selection_key(selection_info)
-        xy = self._fase44c_selection_xy(selection_info)
+        key = self._fase44c_current_selection_key(selection_info)
+        xy = self._fase44c_current_selection_xy(selection_info)
 
         if key is None or xy is None:
             return False
 
         baselines = self._fase44c_baselines()
         baselines.setdefault(key, xy)
+        self._fase44c_last_selected_key = key
         return True
 
     def reset_selected_point_to_baseline(self) -> bool:
         selection_info = self.get_selected_point_info()
-        key = self._fase44c_selection_key(selection_info)
-        current_xy = self._fase44c_selection_xy(selection_info)
+        key = self._fase44c_current_selection_key(selection_info)
+        current_xy = self._fase44c_current_selection_xy(selection_info)
+
+        if key is None:
+            key = getattr(self, "_fase44c_last_selected_key", None)
 
         if key is None or current_xy is None:
             return False
@@ -548,56 +709,88 @@ class ReadOnlyPatternCanvas(ctk.CTkFrame):
     def get_selected_point_info(self):
         """Return user-facing information for the currently selected point.
 
-        The canvas keeps the technical point identifiers because they are part of
-        the transformation contract. This method exposes a stable UI-friendly
-        dictionary without mutating geometry.
+        Keeps the Fase 44A public contract while resolving callable/internal
+        selected point references introduced by the visual canvas.
         """
-        selected = getattr(self, "selected_point", None)
-        if not selected:
+
+        selected_ref_resolver = getattr(self, "_fase44d_selected_point_ref", None)
+        selection = selected_ref_resolver() if callable(selected_ref_resolver) else getattr(self, "selected_point", None)
+        if selection is None:
             return {
                 "has_selection": False,
                 "piece_name": "",
                 "point_id": "",
+                "point_name": "",
                 "human_name": "Sin punto seleccionado",
+                "technical_name": "",
                 "x": None,
                 "y": None,
+                "x_cm": None,
+                "y_cm": None,
             }
+
+        key = self._fase44c_point_ref_key(selection)
+        xy = self._fase44c_point_ref_xy(selection)
 
         piece_name = ""
         point_id = ""
+
+        if key is not None and len(key) >= 2:
+            if key[0] != "selected_point_ref":
+                piece_name = str(key[0])
+                point_id = str(key[1])
+
+        if not piece_name:
+            piece_name = str(
+                self._fase44c_info_get(selection, "piece_name", "piece", "piece_id", "pieza")
+                or ""
+            )
+
+        if not point_id:
+            point_id = str(
+                self._fase44c_info_get(
+                    selection,
+                    "point_id",
+                    "point_name",
+                    "point",
+                    "punto",
+                    "technical_name",
+                    "name",
+                    "human_name",
+                )
+                or ""
+            )
+
         x_value = None
         y_value = None
+        if xy is not None:
+            x_value, y_value = xy
 
-        if isinstance(selected, dict):
-            piece_name = str(selected.get("piece_name") or selected.get("piece") or "")
-            point_id = str(selected.get("point_id") or selected.get("point") or selected.get("id") or "")
-            x_value = selected.get("x")
-            y_value = selected.get("y")
-        elif isinstance(selected, (tuple, list)):
-            if len(selected) >= 1:
-                piece_name = str(selected[0])
-            if len(selected) >= 2:
-                point_id = str(selected[1])
-            if len(selected) >= 3:
-                x_value = selected[2]
-            if len(selected) >= 4:
-                y_value = selected[3]
+        coordinate_resolver = getattr(self, "_resolve_selected_point_coordinates", None)
+        if callable(coordinate_resolver):
+            resolved = coordinate_resolver(piece_name, point_id)
+            if resolved is not None:
+                piece_name, point_id, x_value, y_value = resolved
+
+        humanizer = getattr(self, "humanize_point_name", None)
+        if point_id and callable(humanizer):
+            human_name = humanizer(point_id)
+        elif point_id:
+            human_name = str(point_id).replace("_", " ")
         else:
-            point_id = str(selected)
-
-        # Prefer live geometry coordinates when the canvas exposes them through
-        # common internal attributes used by previous phases.
-        resolved = self._resolve_selected_point_coordinates(piece_name, point_id)
-        if resolved is not None:
-            piece_name, point_id, x_value, y_value = resolved
+            human_name = "Sin punto seleccionado"
 
         return {
             "has_selection": bool(point_id),
             "piece_name": piece_name,
             "point_id": point_id,
-            "human_name": self.humanize_point_name(point_id),
+            "point_name": point_id,
+            "human_name": human_name,
+            "technical_name": point_id,
             "x": x_value,
             "y": y_value,
+            "x_cm": x_value,
+            "y_cm": y_value,
         }
 
     def _resolve_selected_point_coordinates(self, piece_name, point_id):
