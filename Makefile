@@ -167,3 +167,6 @@ validate-fase-43d:
 
 validate-fase-44a:
 	.venv/bin/python -m pytest tests/test_fase_44a_usabilidad_punto_seleccionado.py -q
+
+validate-fase-44b:
+	.venv/bin/python -m pytest tests/test_fase_44b_selector_paso_micro_movimiento_gui.py -q

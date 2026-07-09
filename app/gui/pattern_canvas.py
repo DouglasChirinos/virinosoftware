@@ -421,6 +421,36 @@ class ReadOnlyPatternCanvas(ctk.CTkFrame):
         if label_x is not None and label_y is not None:
             self.canvas.create_text(label_x, max(label_y - 18, 10), text=piece_name, anchor="w")
 
+    # ---- Fase 44B: micro movement API ----
+    @staticmethod
+    def micro_step_values() -> tuple[float, float, float]:
+        return (0.1, 0.5, 1.0)
+
+    @staticmethod
+    def normalize_step_cm(value, default: float = 0.5) -> float:
+        try:
+            step = float(value)
+        except (TypeError, ValueError):
+            return float(default)
+        if step in ReadOnlyPatternCanvas.micro_step_values():
+            return step
+        return float(default)
+
+    def move_selected_point_by(self, dx_cm: float, dy_cm: float) -> bool:
+        if self.selected_point is None:
+            return False
+
+        try:
+            dx = float(dx_cm)
+            dy = float(dy_cm)
+        except (TypeError, ValueError):
+            return False
+
+        self._request_keyboard_move(dx=dx, dy=dy)
+        return True
+
+    # ---- End Fase 44B ----
+
     def get_selected_point_info(self):
         """Return user-facing information for the currently selected point.
 

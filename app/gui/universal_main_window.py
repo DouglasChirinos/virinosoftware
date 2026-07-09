@@ -1,6 +1,7 @@
+from __future__ import annotations
+import tkinter as tk
 """Universal CustomTkinter main window with controlled pattern editor MVP."""
 
-from __future__ import annotations
 
 import tkinter.messagebox as messagebox
 from pathlib import Path
@@ -199,6 +200,7 @@ class UniversalMainWindow(ctk.CTk):
         )
         self.pattern_canvas.grid(row=0, column=0, padx=12, pady=12, sticky="nsew")
         self.pattern_canvas.clear()
+        self._build_micro_movement_controls()
 
     def _selected_option(self):
         return self.garment_by_label.get(self.garment_var.get())
@@ -453,6 +455,103 @@ class UniversalMainWindow(ctk.CTk):
         except Exception as exc:  # noqa: BLE001
             messagebox.showerror("Error exportar variante", str(exc))
 
+    # ---- Fase 44B: micro movement controls ----
+    def _build_micro_movement_controls(self):
+        self.micro_move_step_var = tk.StringVar(value="0.5")
+        self.selected_point_summary_var = tk.StringVar(
+            value=_fase44a_build_selection_summary(None, 0.5)
+        )
+
+        self.micro_move_frame = ctk.CTkFrame(self.pattern_tab)
+        self.micro_move_frame.grid(row=1, column=0, padx=12, pady=(0, 12), sticky="ew")
+        self.micro_move_frame.grid_columnconfigure(3, weight=1)
+
+        ctk.CTkLabel(
+            self.micro_move_frame,
+            text="Micro-movimiento del punto seleccionado",
+        ).grid(row=0, column=0, columnspan=8, padx=8, pady=(8, 4), sticky="w")
+
+        ctk.CTkLabel(self.micro_move_frame, text="Paso").grid(
+            row=1, column=0, padx=(8, 4), pady=4, sticky="w"
+        )
+
+        self.micro_move_step_selector = ctk.CTkOptionMenu(
+            self.micro_move_frame,
+            values=list(_fase44b_step_values()),
+            variable=self.micro_move_step_var,
+            command=lambda _value: self._refresh_selected_point_summary(),
+        )
+        self.micro_move_step_selector.grid(row=1, column=1, padx=4, pady=4, sticky="w")
+
+        ctk.CTkLabel(self.micro_move_frame, text="cm").grid(
+            row=1, column=2, padx=(0, 8), pady=4, sticky="w"
+        )
+
+        self.micro_move_left_button = ctk.CTkButton(
+            self.micro_move_frame,
+            text="Izq",
+            width=56,
+            command=lambda: self._move_selected_point_micro("left"),
+        )
+        self.micro_move_left_button.grid(row=1, column=4, padx=3, pady=4)
+
+        self.micro_move_right_button = ctk.CTkButton(
+            self.micro_move_frame,
+            text="Der",
+            width=56,
+            command=lambda: self._move_selected_point_micro("right"),
+        )
+        self.micro_move_right_button.grid(row=1, column=5, padx=3, pady=4)
+
+        self.micro_move_up_button = ctk.CTkButton(
+            self.micro_move_frame,
+            text="Arriba",
+            width=70,
+            command=lambda: self._move_selected_point_micro("up"),
+        )
+        self.micro_move_up_button.grid(row=1, column=6, padx=3, pady=4)
+
+        self.micro_move_down_button = ctk.CTkButton(
+            self.micro_move_frame,
+            text="Abajo",
+            width=70,
+            command=lambda: self._move_selected_point_micro("down"),
+        )
+        self.micro_move_down_button.grid(row=1, column=7, padx=(3, 8), pady=4)
+
+        self.selected_point_summary_label = ctk.CTkLabel(
+            self.micro_move_frame,
+            textvariable=self.selected_point_summary_var,
+            anchor="w",
+        )
+        self.selected_point_summary_label.grid(
+            row=2, column=0, columnspan=8, padx=8, pady=(4, 8), sticky="ew"
+        )
+
+    def _get_selected_step_cm(self) -> float:
+        return _fase44b_normalize_step(self.micro_move_step_var.get())
+
+    def _refresh_selected_point_summary(self):
+        selection_info = _fase44a_get_canvas_selection_info(self.pattern_canvas)
+        summary = _fase44a_build_selection_summary(
+            selection_info,
+            step_cm=self._get_selected_step_cm(),
+        )
+        self.selected_point_summary_var.set(summary)
+        return summary
+
+    def _move_selected_point_micro(self, direction: str) -> bool:
+        deltas = _fase44b_build_move_deltas(self._get_selected_step_cm())
+        if direction not in deltas:
+            return False
+
+        dx, dy = deltas[direction]
+        moved = self.pattern_canvas.move_selected_point_by(dx, dy)
+        self._refresh_selected_point_summary()
+        return moved
+
+    # ---- End Fase 44B ----
+
 
 # ---- Fase 44A helpers: selected point usability panel ----
 def _fase44a_format_coordinate(value):
@@ -499,3 +598,28 @@ def _fase44a_build_selection_summary(selection_info, step_cm=0.5):
         f"Paso: {float(step_cm):.1f} cm"
     )
 
+# ---- Fase 44B GUI helpers ----
+def _fase44b_step_values():
+    return ("0.1", "0.5", "1.0")
+
+
+def _fase44b_normalize_step(value, default=0.5):
+    try:
+        step = float(value)
+    except (TypeError, ValueError):
+        return float(default)
+    if step in (0.1, 0.5, 1.0):
+        return step
+    return float(default)
+
+
+def _fase44b_build_move_deltas(step_cm):
+    step = _fase44b_normalize_step(step_cm)
+    return {
+        "left": (-step, 0.0),
+        "right": (step, 0.0),
+        "up": (0.0, -step),
+        "down": (0.0, step),
+    }
+
+# ---- End Fase 44B GUI helpers ----
