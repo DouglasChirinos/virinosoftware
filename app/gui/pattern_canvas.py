@@ -446,8 +446,102 @@ class ReadOnlyPatternCanvas(ctk.CTkFrame):
         except (TypeError, ValueError):
             return False
 
+        capture_baseline = getattr(self, "capture_selected_point_baseline", None)
+        if callable(capture_baseline):
+            capture_baseline()
+
         self._request_keyboard_move(dx=dx, dy=dy)
         return True
+
+
+    # ---- Fase 44C: reset selected point API ----
+    @staticmethod
+    def _fase44c_info_get(selection_info, *names):
+        if selection_info is None:
+            return None
+        if isinstance(selection_info, dict):
+            for name in names:
+                if name in selection_info:
+                    return selection_info.get(name)
+            return None
+        for name in names:
+            if hasattr(selection_info, name):
+                return getattr(selection_info, name)
+        return None
+
+    @classmethod
+    def _fase44c_selection_key(cls, selection_info):
+        piece_name = cls._fase44c_info_get(
+            selection_info,
+            "piece_name",
+            "piece",
+            "piece_id",
+            "pieza",
+        )
+        point_name = cls._fase44c_info_get(
+            selection_info,
+            "point_name",
+            "point",
+            "point_id",
+            "punto",
+            "technical_name",
+        )
+        if piece_name is None or point_name is None:
+            return None
+        return str(piece_name), str(point_name)
+
+    @classmethod
+    def _fase44c_selection_xy(cls, selection_info):
+        x_value = cls._fase44c_info_get(selection_info, "x_cm", "x", "coord_x")
+        y_value = cls._fase44c_info_get(selection_info, "y_cm", "y", "coord_y")
+        try:
+            return float(x_value), float(y_value)
+        except (TypeError, ValueError):
+            return None
+
+    def _fase44c_baselines(self):
+        if not hasattr(self, "_selected_point_baselines"):
+            self._selected_point_baselines = {}
+        return self._selected_point_baselines
+
+    def capture_selected_point_baseline(self, selection_info=None) -> bool:
+        if selection_info is None:
+            selection_info = self.get_selected_point_info()
+
+        key = self._fase44c_selection_key(selection_info)
+        xy = self._fase44c_selection_xy(selection_info)
+
+        if key is None or xy is None:
+            return False
+
+        baselines = self._fase44c_baselines()
+        baselines.setdefault(key, xy)
+        return True
+
+    def reset_selected_point_to_baseline(self) -> bool:
+        selection_info = self.get_selected_point_info()
+        key = self._fase44c_selection_key(selection_info)
+        current_xy = self._fase44c_selection_xy(selection_info)
+
+        if key is None or current_xy is None:
+            return False
+
+        baselines = self._fase44c_baselines()
+        if key not in baselines:
+            return False
+
+        base_x, base_y = baselines[key]
+        current_x, current_y = current_xy
+        dx = base_x - current_x
+        dy = base_y - current_y
+
+        if abs(dx) < 0.000001 and abs(dy) < 0.000001:
+            return False
+
+        self._request_keyboard_move(dx=dx, dy=dy)
+        return True
+
+    # ---- End Fase 44C ----
 
     # ---- End Fase 44B ----
 

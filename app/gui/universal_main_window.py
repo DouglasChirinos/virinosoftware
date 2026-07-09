@@ -465,6 +465,9 @@ class UniversalMainWindow(ctk.CTk):
         self.micro_move_frame = ctk.CTkFrame(self.pattern_tab)
         self.micro_move_frame.grid(row=1, column=0, padx=12, pady=(0, 12), sticky="ew")
         self.micro_move_frame.grid_columnconfigure(3, weight=1)
+        self.active_variant_feedback_var = tk.StringVar(
+            value=_fase44c_build_variant_feedback(False)
+        )
 
         ctk.CTkLabel(
             self.micro_move_frame,
@@ -517,7 +520,15 @@ class UniversalMainWindow(ctk.CTk):
             width=70,
             command=lambda: self._move_selected_point_micro("down"),
         )
-        self.micro_move_down_button.grid(row=1, column=7, padx=(3, 8), pady=4)
+        self.micro_move_down_button.grid(row=1, column=7, padx=3, pady=4)
+
+        self.micro_move_reset_button = ctk.CTkButton(
+            self.micro_move_frame,
+            text="Restaurar punto",
+            width=120,
+            command=self._reset_selected_point_micro,
+        )
+        self.micro_move_reset_button.grid(row=1, column=8, padx=(3, 8), pady=4)
 
         self.selected_point_summary_label = ctk.CTkLabel(
             self.micro_move_frame,
@@ -525,7 +536,16 @@ class UniversalMainWindow(ctk.CTk):
             anchor="w",
         )
         self.selected_point_summary_label.grid(
-            row=2, column=0, columnspan=8, padx=8, pady=(4, 8), sticky="ew"
+            row=2, column=0, columnspan=9, padx=8, pady=(4, 2), sticky="ew"
+        )
+
+        self.active_variant_feedback_label = ctk.CTkLabel(
+            self.micro_move_frame,
+            textvariable=self.active_variant_feedback_var,
+            anchor="w",
+        )
+        self.active_variant_feedback_label.grid(
+            row=3, column=0, columnspan=9, padx=8, pady=(2, 8), sticky="ew"
         )
 
     def _get_selected_step_cm(self) -> float:
@@ -548,7 +568,27 @@ class UniversalMainWindow(ctk.CTk):
         dx, dy = deltas[direction]
         moved = self.pattern_canvas.move_selected_point_by(dx, dy)
         self._refresh_selected_point_summary()
+        if moved:
+            self._mark_active_variant_dirty("Punto movido")
         return moved
+
+
+    # ---- Fase 44C: reset and active variant feedback ----
+    def _mark_active_variant_dirty(self, reason: str = "Cambios pendientes"):
+        self.active_variant_feedback_var.set(
+            _fase44c_build_variant_feedback(True, reason=reason)
+        )
+
+    def _mark_active_variant_clean(self):
+        self.active_variant_feedback_var.set(_fase44c_build_variant_feedback(False))
+
+    def _reset_selected_point_micro(self) -> bool:
+        restored = self.pattern_canvas.reset_selected_point_to_baseline()
+        self._refresh_selected_point_summary()
+        self.active_variant_feedback_var.set(_fase44c_build_reset_result_message(restored))
+        return restored
+
+    # ---- End Fase 44C ----
 
     # ---- End Fase 44B ----
 
@@ -623,3 +663,18 @@ def _fase44b_build_move_deltas(step_cm):
     }
 
 # ---- End Fase 44B GUI helpers ----
+
+
+# ---- Fase 44C GUI helpers ----
+def _fase44c_build_variant_feedback(is_dirty, reason="Cambios pendientes"):
+    if is_dirty:
+        return f"Variante activa: con cambios sin guardar ({reason})."
+    return "Variante activa: sin cambios pendientes."
+
+
+def _fase44c_build_reset_result_message(restored):
+    if restored:
+        return "Variante activa: punto restaurado; hay cambios sin guardar."
+    return "Variante activa: no hay punto seleccionado o no existe movimiento para restaurar."
+
+# ---- End Fase 44C GUI helpers ----

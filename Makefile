@@ -170,3 +170,6 @@ validate-fase-44a:
 
 validate-fase-44b:
 	.venv/bin/python -m pytest tests/test_fase_44b_selector_paso_micro_movimiento_gui.py -q
+
+validate-fase-44c:
+	.venv/bin/python -m pytest tests/test_fase_44c_reset_feedback_gui.py -q
